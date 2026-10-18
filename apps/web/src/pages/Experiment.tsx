@@ -4,7 +4,7 @@ import { api, ApiError } from "../api";
 import { useAsync, useReference } from "../hooks";
 import { DecisionTag, OutcomeTag, StatusTag } from "../components/Tags";
 import { ErrorNotice, Loading } from "../components/States";
-import { fmt } from "../components/Instrument";
+import { fmt } from "../format";
 import type { Experiment, RunRecord } from "../types";
 
 const STRATEGY_LABEL: Record<string, string> = {

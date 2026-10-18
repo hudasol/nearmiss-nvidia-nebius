@@ -3,7 +3,7 @@ import { api } from "../api";
 import { useAsync } from "../hooks";
 import { DecisionTag, OutcomeTag, ProvTag } from "../components/Tags";
 import { ErrorNotice, Loading } from "../components/States";
-import { fmt } from "../components/Instrument";
+import { fmt } from "../format";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function ReportPage() {

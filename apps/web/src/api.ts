@@ -10,6 +10,10 @@ import type {
   StressAxis,
 } from "./types";
 
+// Report, benchmark and integration payloads are rendered as documents and typed loosely.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Doc = Record<string, any>;
+
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -81,8 +85,8 @@ export const api = {
   },
   replayRun: (id: string, arm: string, strategy: string, idx: number) =>
     request<SimulationPayload>(`/experiments/${id}/runs/${encodeURIComponent(arm)}/${strategy}/${idx}/replay`),
-  report: (id: string) => request<Record<string, any>>(`/experiments/${id}/report`),
-  benchmark: () => request<Record<string, any>>("/benchmark"),
-  nebius: () => request<Record<string, any>>("/integrations/nebius"),
-  verifyNebius: () => post<Record<string, any>>("/integrations/nebius/verify", undefined, 60_000),
+  report: (id: string) => request<Doc>(`/experiments/${id}/report`),
+  benchmark: () => request<Doc>("/benchmark"),
+  nebius: () => request<Doc>("/integrations/nebius"),
+  verifyNebius: () => post<Doc>("/integrations/nebius/verify", undefined, 60_000),
 };

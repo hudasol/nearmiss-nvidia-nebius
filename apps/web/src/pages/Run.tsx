@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { useAsync, useReference } from "../hooks";
-import { Instrument, fmt } from "../components/Instrument";
+import { Instrument } from "../components/Instrument";
+import { fmt } from "../format";
 import { ErrorNotice, Loading } from "../components/States";
 import type { SimulationPayload } from "../types";
 

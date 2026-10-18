@@ -75,7 +75,7 @@ export function ExperimentBuilder({
     title,
     scenario_id: scenario.id,
     arms: arms.map((a) => ({ intervention: a.intervention })),
-    stress: claim === "robust_clearance" ? { axes: axes.filter((a) => a.on).map(({ on: _on, ...a }) => a) } : null,
+    stress: claim === "robust_clearance" ? { axes: axes.filter((a) => a.on).map((a) => ({ name: a.name, low: a.low, high: a.high, unit: a.unit })) } : null,
     claim,
     metrics,
     strategy: "targeted_search",

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Obstruction, Point, SimulationPayload } from "../types";
 import { PlanView } from "./PlanView";
 import { OutcomeTag } from "./Tags";
+import { fmt, minSeparationFrame } from "../format";
 
 const EVENT_LABEL: Record<string, string> = {
   pedestrian_started: "Pedestrian sets off",
@@ -156,19 +157,6 @@ function Readout({ label, value, unit, alert }: { label: string; value: string; 
   );
 }
 
-export function minSeparationFrame(data: SimulationPayload): number {
-  const start = data.scenario.pedestrian.start_time.value;
-  let best = 0;
-  let bestV = Infinity;
-  data.separation_m.forEach((v, j) => {
-    if (data.trajectory.t[j] >= start && v < bestV) {
-      bestV = v;
-      best = j;
-    }
-  });
-  return best;
-}
-
 function Timeline({ data, frame, threshold, onSeek }: { data: SimulationPayload; frame: number; threshold: number; onSeek: (f: number) => void }) {
   const traj = data.trajectory;
   const W = 1000;
@@ -233,8 +221,4 @@ function Timeline({ data, frame, threshold, onSeek }: { data: SimulationPayload;
       </svg>
     </div>
   );
-}
-
-export function fmt(v: number | null | undefined, nd = 2): string {
-  return v == null ? "n/a" : v.toFixed(nd);
 }
