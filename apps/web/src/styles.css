@@ -172,7 +172,9 @@ svg.plan { width: 100%; height: auto; display: block; user-select: none; }
 
 /* ---- layouts -------------------------------------------------------------- */
 .workspace { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: var(--s5); align-items: start; }
-.stack { display: grid; gap: var(--s4); align-content: start; }
+.stack { display: grid; gap: var(--s4); align-content: start; min-width: 0; }
+.workspace > *, .split > *, .cols-3 > *, .stack > * { min-width: 0; }
+.tabs { overflow-x: auto; }
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
 .cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
 .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--s4); font-size: 0.92rem; }
@@ -207,13 +209,22 @@ svg.plan { width: 100%; height: auto; display: block; user-select: none; }
 
 @media (max-width: 1100px) {
   .workspace { grid-template-columns: 1fr; }
+  /* The simulation leads on narrow screens; the evidence column follows it. */
+  .workspace > :last-child { order: -1; }
   .incident-row { grid-template-columns: 160px minmax(0, 1fr); }
   .incident-row .meta { grid-column: 1 / -1; }
 }
 @media (max-width: 720px) {
   main.page { padding: var(--s4); }
-  .topbar { gap: var(--s3); padding: 0 var(--s4); overflow-x: auto; }
+  .topbar { gap: var(--s2) var(--s3); padding: var(--s2) var(--s4); height: auto; flex-wrap: wrap; }
+  .topbar .spacer { display: none; }
+  .topnav { order: 3; width: 100%; margin: 0 calc(-1 * var(--s2)); }
+  .model-status { margin-left: auto; }
   .model-status .txt { display: none; }
+  .instrument-head { padding: var(--s2) var(--s3); gap: var(--s2); }
+  .plan-wrap, .transport { padding-left: var(--s3); padding-right: var(--s3); }
+  .readouts { grid-template-columns: repeat(2, 1fr); }
+  .readout { border-bottom: 1px solid var(--rule); }
   .split, .cols-3 { grid-template-columns: 1fr; }
   .incident-row { grid-template-columns: 1fr; }
   .report-doc { padding: var(--s5) var(--s4); }

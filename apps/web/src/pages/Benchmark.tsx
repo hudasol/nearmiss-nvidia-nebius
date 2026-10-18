@@ -54,6 +54,13 @@ export function BenchmarkPage() {
         </div>
       </div>
 
+      <div className="notice warn section">
+        <strong>Preregistered verdict: not supported on held-out scenarios.</strong> Both workflows caught every unsafe
+        held-out change. The difference appears on development scenarios, where failure regions are small. The
+        targeted search's held-out false rejections are real near misses that the reference sweep missed; see the{" "}
+        <a href={`${REPO}/docs/benchmark-results.md`} target="_blank" rel="noreferrer">full results and deviations</a>.
+      </div>
+
       <section className="section">
         <div className="tabs" role="tablist">
           {SUBSETS.map(([k, label]) => (
