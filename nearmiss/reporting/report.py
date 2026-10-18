@@ -63,6 +63,12 @@ def _param_rows(sc: Scenario) -> list[dict[str, Any]]:
     return rows
 
 
+def _describe_outcome(outcome: str, sep: float | None) -> str:
+    if outcome == "collision":
+        return "collision" + (f", {abs(sep):.2f} m overlap" if sep is not None and sep < 0 else "")
+    return f"{outcome.replace('_', ' ')} at {_fmt(sep, 'm')}"
+
+
 def _describe_point(point: dict[str, float]) -> str:
     parts = []
     for k, v in point.items():
@@ -171,7 +177,7 @@ def build_report(store: Store, experiment_id: str) -> dict[str, Any]:
             headline.append(
                 f"{arm['label']}: clears the replayed incident (minimum clearance {_fmt(nsep, 'm')}) "
                 f"but failed in {p['unsafe_runs']} of {p['runs']} stress runs. Worst: "
-                f"{w['outcome'].replace('_', ' ')} at {_fmt(w['min_moving_separation_m'], 'm')} with "
+                f"{_describe_outcome(w['outcome'], w['min_moving_separation_m'])} with "
                 f"{_describe_point(w['stress_point'])}."
             )
         elif verdict == "fails_at_nominal":
@@ -186,10 +192,16 @@ def build_report(store: Store, experiment_id: str) -> dict[str, Any]:
             )
         c = strategies.get("conventional_sweep")
         if c is not None and primary != "conventional_sweep" and c["decision"] != p["decision"]:
+            def found(d: dict[str, Any]) -> str:
+                return (
+                    f"found {d['unsafe_runs']} unsafe run{'s' if d['unsafe_runs'] != 1 else ''}"
+                    if d["decision"] == "rejected"
+                    else "found no failure"
+                )
+
             headline.append(
-                f"  The conventional sweep with the same budget {c['decision']} '{arm['label']}' "
-                f"({c['unsafe_runs']} unsafe runs) while targeted search {p['decision']} it "
-                f"({p['unsafe_runs']} unsafe runs)."
+                f"  With the same {c['runs']}-run budget, the conventional sweep {found(c)} for "
+                f"'{arm['label']}', while targeted search {found(p)}."
             )
 
     failure_cases.sort(key=lambda f: (f["min_moving_separation_m"] if f["min_moving_separation_m"] is not None else -9))
