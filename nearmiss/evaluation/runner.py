@@ -126,7 +126,8 @@ def run_strategy(
                     RunRecord(
                         index=len(records),
                         batch=batch_no,
-                        stress_point={k: round(v, 9) for k, v in point.items()},
+                        # Full precision: replaying the stored point must reproduce the hashes.
+                        stress_point=dict(point),
                         config_hash=cfg,
                         trajectory_hash=th,
                         metrics=metrics,
