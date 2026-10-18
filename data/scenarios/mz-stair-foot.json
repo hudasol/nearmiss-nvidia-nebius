@@ -1,0 +1,63 @@
+{
+  "schema_version": "nearmiss.scenario/1",
+  "id": "mz-stair-foot",
+  "title": "Mezzanine stair foot — westbound truck, stock cages at the corner",
+  "description": "Synthetic held-out scenario. A pedestrian comes down the mezzanine stair and walks north across the main aisle to the pick face. The stair structure and a row of stock cages east of the crossing hide the pedestrian from a westbound truck.",
+  "data_origin": "synthetic_reference",
+  "bounds": { "width_m": 34.0, "height_m": 16.0 },
+  "calibration": {
+    "frame": "Site plan frame: x east, y north, metres, origin at south-west corner of the plan extract",
+    "scale_source": "Synthetic site drawing at 1:200",
+    "reference_measurements": [
+      { "label": "Main aisle clear width (y 7.0 to 10.5)", "value_m": 3.5, "provenance": "observed", "source": "synthetic site drawing, dimensioned" },
+      { "label": "Stair stringer footprint length", "value_m": 4.0, "provenance": "observed", "source": "synthetic mezzanine drawing" }
+    ]
+  },
+  "layout": [
+    { "id": "main-aisle", "label": "Main aisle (forklift travel)", "kind": "aisle", "polygon": [[0, 7], [34, 7], [34, 10.5], [0, 10.5]] },
+    { "id": "mezz-foot", "label": "Mezzanine stair area", "kind": "dock", "polygon": [[0, 0], [34, 0], [34, 7], [0, 7]] },
+    { "id": "pick-face", "label": "Pick face", "kind": "rack", "polygon": [[0, 10.5], [34, 10.5], [34, 16], [0, 16]] },
+    { "id": "crossing-20", "label": "Painted crossing X-20", "kind": "crossing", "polygon": [[19.2, 7], [20.8, 7], [20.8, 10.5], [19.2, 10.5]] }
+  ],
+  "obstructions": [
+    { "id": "stair", "label": "Mezzanine stair", "kind": "equipment", "geometry": { "center": [21.6, 4.0], "length": 2.0, "width": 4.0, "rotation_deg": 0 }, "height_m": 3.5, "opaque": true, "movable": false, "provenance": "observed", "source": "synthetic mezzanine drawing" },
+    { "id": "cage-row", "label": "Stock cage row", "kind": "pallet_stack", "geometry": { "center": [23.5, 6.2], "length": 2.4, "width": 1.0, "rotation_deg": 0 }, "height_m": 1.8, "opaque": true, "movable": true, "provenance": "observed", "source": "synthetic: incident-day floor photo" }
+  ],
+  "forklift": {
+    "id": "fl-21",
+    "label": "Forklift FL-21 (counterbalance, unladen)",
+    "length_m": 3.3,
+    "width_m": 1.15,
+    "eye_offset_m": [-0.35, 0.0],
+    "route": [[32.5, 8.75], [1.5, 8.75]],
+    "cruise_speed": { "value": 2.4, "unit": "m/s", "provenance": "estimated", "source": "synthetic telematics, main aisle segment mean", "uncertainty": 0.2 },
+    "braking_decel": { "value": 2.0, "unit": "m/s²", "provenance": "assumed", "source": "typical service-brake deceleration, unladen; not measured" },
+    "max_accel": { "value": 1.0, "unit": "m/s²", "provenance": "assumed", "source": "typical; not measured" },
+    "reaction_time": { "value": 1.0, "unit": "s", "provenance": "assumed", "source": "mid-range perception-reaction time" },
+    "detection_range_m": 40.0,
+    "field_of_view_deg": 150.0,
+    "hazard_lateral_margin_m": 0.5,
+    "prediction_horizon_s": 4.0,
+    "resume_clear_time_s": 1.0
+  },
+  "pedestrian": {
+    "id": "ped-1",
+    "label": "Pedestrian (picker leaving the mezzanine)",
+    "radius_m": 0.3,
+    "route": [[20.0, 1.0], [20.0, 15.0]],
+    "walking_speed": { "value": 1.35, "unit": "m/s", "provenance": "estimated", "source": "synthetic CCTV timing", "uncertainty": 0.15 },
+    "start_time": { "value": 1.5, "unit": "s", "provenance": "estimated", "source": "synthetic CCTV timestamp aligned to telematics", "uncertainty": 0.5 },
+    "behaviour": "non_yielding"
+  },
+  "simulation": { "dt_s": 0.02, "duration_s": 24.0 },
+  "crossing_template": { "approach_y_m": 1.2, "exit_y_m": 13.0, "min_crossing_x_m": 5.0, "max_crossing_x_m": 30.0 },
+  "incident": {
+    "id": "INC-2026-0471",
+    "occurred_at": "2026-10-06T11:20:00 (synthetic)",
+    "location": "Main aisle, crossing X-20 at the mezzanine stair",
+    "summary": "Westbound forklift FL-21 passed within about 0.3 m of a picker coming off the mezzanine stair.",
+    "narrative": "At about 11:20 a picker came down the mezzanine stair and walked north across the main aisle at crossing X-20. Forklift FL-21 was travelling west. A row of stock cages stood east of the crossing next to the stair. The driver saw the picker late and braked hard; the truck was still rolling as it passed the picker, who had stopped at the edge of the aisle roughly 0.3 m from the side of the truck.",
+    "reported_closest_approach_m": { "value": 0.3, "unit": "m", "provenance": "estimated", "source": "driver statement", "uncertainty": 0.2 }
+  },
+  "tags": ["held-out", "stair-foot"]
+}

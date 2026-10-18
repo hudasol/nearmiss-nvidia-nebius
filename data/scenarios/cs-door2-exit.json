@@ -1,0 +1,63 @@
+{
+  "schema_version": "nearmiss.scenario/1",
+  "id": "cs-door2-exit",
+  "title": "Cold store door 2 — pedestrian exits into the dispatch aisle",
+  "description": "Synthetic held-out scenario. A pedestrian leaves the cold store through door 2 and walks south across the dispatch aisle. The cold-store wall limits the driver's view to the door opening, and a rolling cage parked beside the door blocks part of that opening. The aisle floor is frosty near the door, so braking is weaker.",
+  "data_origin": "synthetic_reference",
+  "bounds": { "width_m": 30.0, "height_m": 14.0 },
+  "calibration": {
+    "frame": "Site plan frame: x east, y north, metres, origin at south-west corner of the plan extract",
+    "scale_source": "Synthetic site drawing at 1:200",
+    "reference_measurements": [
+      { "label": "Dispatch aisle clear width (y 5.0 to 8.5)", "value_m": 3.5, "provenance": "observed", "source": "synthetic site drawing, dimensioned" },
+      { "label": "Door 2 clear opening", "value_m": 1.6, "provenance": "observed", "source": "synthetic door schedule" }
+    ]
+  },
+  "layout": [
+    { "id": "dispatch-aisle", "label": "Dispatch aisle (forklift travel)", "kind": "aisle", "polygon": [[0, 5], [30, 5], [30, 8.5], [0, 8.5]] },
+    { "id": "cold-store", "label": "Cold store", "kind": "dock", "polygon": [[0, 10.4], [30, 10.4], [30, 14], [0, 14]] },
+    { "id": "dispatch", "label": "Dispatch lanes", "kind": "dock", "polygon": [[0, 0], [30, 0], [30, 5], [0, 5]] },
+    { "id": "walkway-14", "label": "Door 2 walkway", "kind": "walkway", "polygon": [[13.2, 5], [14.8, 5], [14.8, 10.0], [13.2, 10.0]] }
+  ],
+  "obstructions": [
+    { "id": "wall-west", "label": "Cold store wall, west of door 2", "kind": "wall", "geometry": { "center": [6.6, 10.2], "length": 13.2, "width": 0.4, "rotation_deg": 0 }, "height_m": 6.0, "opaque": true, "movable": false, "provenance": "observed", "source": "synthetic site drawing" },
+    { "id": "wall-east", "label": "Cold store wall, east of door 2", "kind": "wall", "geometry": { "center": [22.4, 10.2], "length": 15.2, "width": 0.4, "rotation_deg": 0 }, "height_m": 6.0, "opaque": true, "movable": false, "provenance": "observed", "source": "synthetic site drawing" },
+    { "id": "cage-1", "label": "Rolling cage parked by door 2", "kind": "equipment", "geometry": { "center": [12.2, 9.3], "length": 1.4, "width": 1.0, "rotation_deg": 0 }, "height_m": 1.8, "opaque": true, "movable": true, "provenance": "observed", "source": "synthetic: incident-day CCTV still" }
+  ],
+  "forklift": {
+    "id": "fl-03",
+    "label": "Forklift FL-03 (reach truck, cold-store rated)",
+    "length_m": 2.9,
+    "width_m": 1.1,
+    "eye_offset_m": [-0.3, 0.0],
+    "route": [[1.5, 6.75], [28.5, 6.75]],
+    "cruise_speed": { "value": 1.8, "unit": "m/s", "provenance": "estimated", "source": "synthetic telematics, dispatch aisle segment mean", "uncertainty": 0.2 },
+    "braking_decel": { "value": 1.4, "unit": "m/s²", "provenance": "assumed", "source": "reduced deceleration on frosty floor near cold-store door; not measured" },
+    "max_accel": { "value": 0.8, "unit": "m/s²", "provenance": "assumed", "source": "typical reach truck acceleration; not measured" },
+    "reaction_time": { "value": 1.1, "unit": "s", "provenance": "assumed", "source": "perception-reaction time, adjusted for cold-store PPE" },
+    "detection_range_m": 40.0,
+    "field_of_view_deg": 150.0,
+    "hazard_lateral_margin_m": 0.5,
+    "prediction_horizon_s": 4.0,
+    "resume_clear_time_s": 1.0
+  },
+  "pedestrian": {
+    "id": "ped-1",
+    "label": "Pedestrian (cold-store operative)",
+    "radius_m": 0.3,
+    "route": [[14.0, 12.5], [14.0, 1.0]],
+    "walking_speed": { "value": 1.3, "unit": "m/s", "provenance": "estimated", "source": "synthetic CCTV timing", "uncertainty": 0.15 },
+    "start_time": { "value": 1.8, "unit": "s", "provenance": "estimated", "source": "synthetic CCTV timestamp aligned to telematics", "uncertainty": 0.5 },
+    "behaviour": "non_yielding"
+  },
+  "simulation": { "dt_s": 0.02, "duration_s": 24.0 },
+  "incident": {
+    "id": "INC-2026-0455",
+    "occurred_at": "2026-10-02T06:15:00 (synthetic)",
+    "location": "Dispatch aisle at cold store door 2",
+    "summary": "Reach truck FL-03 stopped for an operative stepping out of cold store door 2.",
+    "narrative": "Shortly after 06:15 an operative left the cold store through door 2 and walked straight across the dispatch aisle toward dispatch lane 3. Reach truck FL-03 was travelling east along the aisle. A rolling cage was parked against the wall just west of the door. The driver braked as soon as the operative appeared; the truck stopped close to the operative, estimated at about 0.4 m. The floor by the door was frosty.",
+    "reported_closest_approach_m": { "value": 0.4, "unit": "m", "provenance": "estimated", "source": "driver statement", "uncertainty": 0.2 }
+  },
+  "tags": ["held-out", "door-exit", "cold-store"]
+}
