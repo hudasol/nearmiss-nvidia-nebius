@@ -1,0 +1,83 @@
+{
+  "schema_version": "nearmiss.scenario/1",
+  "id": "dc-aisle9-wrapper",
+  "title": "Aisle 9 wrapper infeed — loaded truck, westbound",
+  "description": "Synthetic reference scenario. A loaded counterbalance forklift travels west along Aisle 9. A pedestrian walks south from the break room to the returns cage, crossing the aisle beside the stretch-wrapper infeed, where pallets queue for wrapping. The queue and the wrapper hide the pedestrian from the driver.",
+  "data_origin": "synthetic_reference",
+  "bounds": { "width_m": 36.0, "height_m": 16.0 },
+  "calibration": {
+    "frame": "Site plan frame: x east, y north, metres, origin at south-west corner of the plan extract",
+    "scale_source": "Synthetic site drawing at 1:200; scale checked against the reference measurements below",
+    "reference_measurements": [
+      { "label": "Aisle 9 clear width (y 6.0 to 9.5)", "value_m": 3.5, "provenance": "observed", "source": "synthetic site drawing, dimensioned" },
+      { "label": "Wrapper turntable footprint", "value_m": 2.4, "provenance": "observed", "source": "synthetic equipment datasheet" }
+    ]
+  },
+  "layout": [
+    { "id": "aisle-9", "label": "Aisle 9 (forklift travel)", "kind": "aisle", "polygon": [[0, 6], [36, 6], [36, 9.5], [0, 9.5]] },
+    { "id": "wrap-area", "label": "Wrapping area", "kind": "dock", "polygon": [[0, 9.5], [36, 9.5], [36, 16], [0, 16]] },
+    { "id": "returns", "label": "Returns area", "kind": "dock", "polygon": [[0, 0], [36, 0], [36, 6], [0, 6]] },
+    { "id": "crossing-15", "label": "Painted crossing X-15", "kind": "crossing", "polygon": [[14.2, 6], [15.8, 6], [15.8, 9.5], [14.2, 9.5]] }
+  ],
+  "obstructions": [
+    {
+      "id": "infeed-queue",
+      "label": "Wrapper infeed pallet queue",
+      "kind": "pallet_stack",
+      "geometry": { "center": [17.4, 11.0], "length": 3.0, "width": 1.6, "rotation_deg": 0 },
+      "height_m": 1.9,
+      "opaque": true,
+      "movable": true,
+      "provenance": "observed",
+      "source": "synthetic: queue position from incident-day CCTV still"
+    },
+    {
+      "id": "wrapper",
+      "label": "Stretch wrapper W-2",
+      "kind": "equipment",
+      "geometry": { "center": [21.0, 11.6], "length": 2.4, "width": 2.4, "rotation_deg": 0 },
+      "height_m": 2.6,
+      "opaque": true,
+      "movable": false,
+      "provenance": "observed",
+      "source": "synthetic site drawing, equipment schedule"
+    }
+  ],
+  "forklift": {
+    "id": "fl-12",
+    "label": "Forklift FL-12 (counterbalance, loaded)",
+    "length_m": 3.6,
+    "width_m": 1.2,
+    "eye_offset_m": [-0.4, 0.0],
+    "route": [[34.5, 7.75], [1.5, 7.75]],
+    "cruise_speed": { "value": 2.2, "unit": "m/s", "provenance": "estimated", "source": "synthetic telematics speed log, Aisle 9 segment mean", "uncertainty": 0.2 },
+    "braking_decel": { "value": 1.6, "unit": "m/s²", "provenance": "assumed", "source": "reduced service-brake deceleration for a loaded truck to protect load stability; not measured" },
+    "max_accel": { "value": 0.8, "unit": "m/s²", "provenance": "assumed", "source": "typical loaded counterbalance truck acceleration; not measured" },
+    "reaction_time": { "value": 1.0, "unit": "s", "provenance": "assumed", "source": "mid-range driver perception-reaction time" },
+    "detection_range_m": 40.0,
+    "field_of_view_deg": 150.0,
+    "hazard_lateral_margin_m": 0.5,
+    "prediction_horizon_s": 4.0,
+    "resume_clear_time_s": 1.0
+  },
+  "pedestrian": {
+    "id": "ped-1",
+    "label": "Pedestrian (returns clerk)",
+    "radius_m": 0.3,
+    "route": [[15.0, 15.0], [15.0, 1.0]],
+    "walking_speed": { "value": 1.25, "unit": "m/s", "provenance": "estimated", "source": "synthetic CCTV timing between two floor markers", "uncertainty": 0.15 },
+    "start_time": { "value": 2.75, "unit": "s", "provenance": "estimated", "source": "synthetic CCTV timestamp aligned to forklift telematics", "uncertainty": 0.5 },
+    "behaviour": "non_yielding"
+  },
+  "simulation": { "dt_s": 0.02, "duration_s": 24.0 },
+  "crossing_template": { "approach_y_m": 13.5, "exit_y_m": 3.0, "min_crossing_x_m": 4.0, "max_crossing_x_m": 32.0 },
+  "incident": {
+    "id": "INC-2026-0388",
+    "occurred_at": "2026-08-27T09:40:00 (synthetic)",
+    "location": "Aisle 9, painted crossing X-15",
+    "summary": "Loaded forklift FL-12 braked for a clerk who stepped out from beside the wrapper infeed queue.",
+    "narrative": "Around 09:40 forklift FL-12, carrying a full pallet, was travelling west along Aisle 9. A returns clerk walked south from the break room to the returns cage using crossing X-15. Four pallets were queued at the wrapper infeed east of the crossing. The driver braked when the clerk appeared from behind the queue; the truck stopped with the forks close to the clerk, estimated at a little under half a metre. No contact.",
+    "reported_closest_approach_m": { "value": 0.4, "unit": "m", "provenance": "estimated", "source": "driver statement and CCTV still", "uncertainty": 0.2 }
+  },
+  "tags": ["reference", "blind-corner", "loaded-truck"]
+}
