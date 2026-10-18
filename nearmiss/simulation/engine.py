@@ -40,6 +40,8 @@ from nearmiss.domain.models import ForkliftSpec, Scenario
 
 ENGINE_VERSION = "nearmiss-kinematic/1.0.0"
 
+#: Simulated time kept after the interaction is physically over.
+TERMINATION_TAIL_S = 2.0
 #: Below this speed the forklift counts as stationary for the pedestrian.
 STATIONARY_SPEED = 0.05
 #: Time a pedestrian waits at a stationary vehicle before walking around it.
@@ -287,6 +289,20 @@ def simulate(scenario: Scenario) -> Trajectory:
     horizon = fk.prediction_horizon_s
     pred_steps = max(1, round(horizon / 0.25))
 
+    # Early termination: once the truck's rear has passed the crossing and the pedestrian
+    # has left the lane on the far side, no further crossing conflict is possible.
+    # The run continues for TERMINATION_TAIL_S so the replay shows the aftermath.
+    hit = fk_route.first_intersection(ped_route)
+    conflict_pt: gm.Point | None = None
+    conflict_heading = 0.0
+    ped_start_side = 0.0
+    if hit is not None:
+        conflict_pt = hit[0]
+        conflict_heading = fk_route.pose_at(hit[1])[1]
+        ped_start_side = gm.to_local(ped_route.points[0], conflict_pt, conflict_heading)[1]
+    lane_clear = fk.width_m / 2.0 + ped.radius_m + 0.5
+    end_time: float | None = None
+
     state = _ForkliftState(s=0.0, v=v_cruise)
     perception = _Perception()
     ped_started_logged = False
@@ -408,6 +424,16 @@ def simulate(scenario: Scenario) -> Trajectory:
         states.append(state.state)
         visible_col.append(visible)
         hazard_col.append(hazard)
+
+        if end_time is None and conflict_pt is not None:
+            rear_x = gm.to_local(center, conflict_pt, conflict_heading)[0] - fk.length_m / 2.0
+            ped_y = gm.to_local(ped_pos, conflict_pt, conflict_heading)[1]
+            fk_past = rear_x > ped.radius_m + 0.5
+            ped_past = ped_present and ped_y * ped_start_side < 0 and abs(ped_y) > lane_clear
+            if fk_past and ped_past:
+                end_time = t + TERMINATION_TAIL_S
+        if end_time is not None and t >= end_time - 1e-9:
+            break
 
         # --- integrate ------------------------------------------------------------
         if state.state in ("braking",):
