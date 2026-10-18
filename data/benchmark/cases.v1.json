@@ -1,0 +1,378 @@
+{
+  "id": "nearmiss.benchmark/1",
+  "description": "Pre-declared benchmark cases. Labels are NOT stored here: they come only from the dense reference sweep.",
+  "budget_per_evaluation": 48,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+  ],
+  "oracle": {
+    "sequence": "halton",
+    "points": 8192,
+    "skip": 20
+  },
+  "envelope_policy": "Every scenario uses the compiler's default range for all seven stress axes, centred on that scenario's values. If the compiler reports timing_unreachable for any case of a scenario, pedestrian_start_offset is widened to the compiler's corrected range for that scenario. The final envelope is recorded in the results.",
+  "categories": {
+    "as_is": "Existing layout. Predefined failure case: the replayed incident itself is a near miss.",
+    "negative_control": "A token change expected to be ineffective, used to check that the method does not accept changes that do nothing useful.",
+    "candidate": "A plausible intervention a safety manager might propose."
+  },
+  "scenarios": [
+    {
+      "scenario_id": "dc-aisle4-crossing",
+      "role": "development",
+      "cases": [
+        {
+          "case_id": "dc-aisle4-crossing/as-is",
+          "category": "as_is",
+          "intervention": null
+        },
+        {
+          "case_id": "dc-aisle4-crossing/stack-w0.5",
+          "category": "negative_control",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "stack-w0.5",
+            "label": "Move stack A 0.5 m west",
+            "obstruction_id": "stack-a",
+            "offset_m": [
+              -0.5,
+              0
+            ]
+          }
+        },
+        {
+          "case_id": "dc-aisle4-crossing/stack-w3",
+          "category": "candidate",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "stack-w3",
+            "label": "Move stack A 3 m west",
+            "obstruction_id": "stack-a",
+            "offset_m": [
+              -3,
+              0
+            ]
+          }
+        },
+        {
+          "case_id": "dc-aisle4-crossing/stack-w6",
+          "category": "candidate",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "stack-w6",
+            "label": "Move stack A 6 m west",
+            "obstruction_id": "stack-a",
+            "offset_m": [
+              -6,
+              0
+            ]
+          }
+        },
+        {
+          "case_id": "dc-aisle4-crossing/stack-remove",
+          "category": "candidate",
+          "intervention": {
+            "type": "remove_obstruction",
+            "id": "stack-remove",
+            "label": "Remove stack A from the marshalling area",
+            "obstruction_id": "stack-a"
+          }
+        },
+        {
+          "case_id": "dc-aisle4-crossing/cross-x12",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x12",
+            "label": "Move the crossing to x = 12 m",
+            "crossing_x_m": 12
+          }
+        },
+        {
+          "case_id": "dc-aisle4-crossing/cross-x27",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x27",
+            "label": "Move the crossing to x = 27 m",
+            "crossing_x_m": 27
+          }
+        },
+        {
+          "case_id": "dc-aisle4-crossing/cross-x30",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x30",
+            "label": "Move the crossing to x = 30 m",
+            "crossing_x_m": 30
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "dc-aisle9-wrapper",
+      "role": "development",
+      "cases": [
+        {
+          "case_id": "dc-aisle9-wrapper/as-is",
+          "category": "as_is",
+          "intervention": null
+        },
+        {
+          "case_id": "dc-aisle9-wrapper/queue-n0.5",
+          "category": "negative_control",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "queue-n0.5",
+            "label": "Move infeed queue 0.5 m north",
+            "obstruction_id": "infeed-queue",
+            "offset_m": [
+              0,
+              0.5
+            ]
+          }
+        },
+        {
+          "case_id": "dc-aisle9-wrapper/queue-n2",
+          "category": "candidate",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "queue-n2",
+            "label": "Move infeed queue 2 m north",
+            "obstruction_id": "infeed-queue",
+            "offset_m": [
+              0,
+              2.0
+            ]
+          }
+        },
+        {
+          "case_id": "dc-aisle9-wrapper/queue-n3.5",
+          "category": "candidate",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "queue-n3.5",
+            "label": "Move infeed queue 3.5 m north",
+            "obstruction_id": "infeed-queue",
+            "offset_m": [
+              0,
+              3.5
+            ]
+          }
+        },
+        {
+          "case_id": "dc-aisle9-wrapper/queue-remove",
+          "category": "candidate",
+          "intervention": {
+            "type": "remove_obstruction",
+            "id": "queue-remove",
+            "label": "Stop queuing pallets at the infeed",
+            "obstruction_id": "infeed-queue"
+          }
+        },
+        {
+          "case_id": "dc-aisle9-wrapper/cross-x10",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x10",
+            "label": "Move the crossing to x = 10 m",
+            "crossing_x_m": 10
+          }
+        },
+        {
+          "case_id": "dc-aisle9-wrapper/cross-x26",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x26",
+            "label": "Move the crossing to x = 26 m",
+            "crossing_x_m": 26
+          }
+        },
+        {
+          "case_id": "dc-aisle9-wrapper/cross-x30",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x30",
+            "label": "Move the crossing to x = 30 m",
+            "crossing_x_m": 30
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "cs-door2-exit",
+      "role": "held_out",
+      "cases": [
+        {
+          "case_id": "cs-door2-exit/as-is",
+          "category": "as_is",
+          "intervention": null
+        },
+        {
+          "case_id": "cs-door2-exit/cage-w0.5",
+          "category": "negative_control",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "cage-w0.5",
+            "label": "Park the cage 0.5 m further west",
+            "obstruction_id": "cage-1",
+            "offset_m": [
+              -0.5,
+              0
+            ]
+          }
+        },
+        {
+          "case_id": "cs-door2-exit/cage-w2",
+          "category": "candidate",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "cage-w2",
+            "label": "Park the cage 2 m further west",
+            "obstruction_id": "cage-1",
+            "offset_m": [
+              -2,
+              0
+            ]
+          }
+        },
+        {
+          "case_id": "cs-door2-exit/cage-w4",
+          "category": "candidate",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "cage-w4",
+            "label": "Park the cage 4 m further west",
+            "obstruction_id": "cage-1",
+            "offset_m": [
+              -4,
+              0
+            ]
+          }
+        },
+        {
+          "case_id": "cs-door2-exit/cage-remove",
+          "category": "candidate",
+          "intervention": {
+            "type": "remove_obstruction",
+            "id": "cage-remove",
+            "label": "No cage parking by door 2",
+            "obstruction_id": "cage-1"
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "mz-stair-foot",
+      "role": "held_out",
+      "cases": [
+        {
+          "case_id": "mz-stair-foot/as-is",
+          "category": "as_is",
+          "intervention": null
+        },
+        {
+          "case_id": "mz-stair-foot/cages-e0.5",
+          "category": "negative_control",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "cages-e0.5",
+            "label": "Move the cage row 0.5 m east",
+            "obstruction_id": "cage-row",
+            "offset_m": [
+              0.5,
+              0
+            ]
+          }
+        },
+        {
+          "case_id": "mz-stair-foot/cages-e3",
+          "category": "candidate",
+          "intervention": {
+            "type": "relocate_obstruction",
+            "id": "cages-e3",
+            "label": "Move the cage row 3 m east",
+            "obstruction_id": "cage-row",
+            "offset_m": [
+              3,
+              0
+            ]
+          }
+        },
+        {
+          "case_id": "mz-stair-foot/cages-remove",
+          "category": "candidate",
+          "intervention": {
+            "type": "remove_obstruction",
+            "id": "cages-remove",
+            "label": "Remove the cage row",
+            "obstruction_id": "cage-row"
+          }
+        },
+        {
+          "case_id": "mz-stair-foot/cross-x10",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x10",
+            "label": "Move the crossing to x = 10 m",
+            "crossing_x_m": 10
+          }
+        },
+        {
+          "case_id": "mz-stair-foot/cross-x14",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x14",
+            "label": "Move the crossing to x = 14 m",
+            "crossing_x_m": 14
+          }
+        },
+        {
+          "case_id": "mz-stair-foot/cross-x26",
+          "category": "candidate",
+          "intervention": {
+            "type": "reroute_crossing",
+            "id": "cross-x26",
+            "label": "Move the crossing to x = 26 m",
+            "crossing_x_m": 26
+          }
+        }
+      ]
+    }
+  ]
+}
