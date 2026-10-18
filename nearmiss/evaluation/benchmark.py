@@ -135,6 +135,32 @@ def _oracle(
     )
 
 
+def _evaluate(
+    scenario_json: dict[str, Any],
+    envelope_json: dict[str, Any],
+    strategy: str,
+    budget: int,
+    seed: int,
+) -> tuple[SeedOutcome, dict[str, Any]]:
+    """One (strategy, seed) evaluation, run serially inside a worker process."""
+    sc = Scenario.model_validate(scenario_json)
+    env = StressEnvelope.model_validate(envelope_json)
+    name = "conventional_sweep" if strategy == "nominal_only" else strategy
+    b = 1 if strategy == "nominal_only" else budget
+    r = run_strategy(sc, env, name, b, seed)
+    fail = r.runs[r.first_failure_index].stress_point if r.first_failure_index is not None else None
+    outcome = SeedOutcome(
+        seed=seed,
+        decision=r.decision,
+        first_failure_index=r.first_failure_index,
+        unsafe_runs=r.unsafe_runs,
+        worst_margin_m=r.runs[r.worst_run_index].margin_m,
+        runtime_s=r.runtime_s,
+        failing_point=fail,
+    )
+    return outcome, r.runs[0].model_dump(mode="json")
+
+
 def _git_commit() -> str | None:
     try:
         return (
@@ -177,37 +203,35 @@ def run_benchmark(
                 sc = apply_intervention(base, iv)[0] if iv else base
                 print(f"[{time.perf_counter() - t_start:7.1f}s] {c['case_id']}: oracle…", flush=True)
                 oracle = _oracle(sc, envelope, n_oracle, skip, ex)
+                sj = sc.model_dump(mode="json")
+                ej = envelope.model_dump(mode="json")
+                tasks = [(strat, seed) for strat in STRATEGIES for seed in seeds]
+                outs = list(
+                    ex.map(
+                        _evaluate,
+                        [sj] * len(tasks),
+                        [ej] * len(tasks),
+                        [t[0] for t in tasks],
+                        [budget] * len(tasks),
+                        [t[1] for t in tasks],
+                    )
+                )
                 per_strategy: dict[str, list[SeedOutcome]] = {s: [] for s in STRATEGIES}
                 misses: list[dict[str, Any]] = []
-                nominal = None
-                for seed in seeds:
-                    for strat in STRATEGIES:
-                        name = "conventional_sweep" if strat == "nominal_only" else strat
-                        b = 1 if strat == "nominal_only" else budget
-                        if strat == "nominal_only" and seed != seeds[0]:
-                            per_strategy[strat].append(per_strategy[strat][0].model_copy(update={"seed": seed}))
-                            continue
-                        r = run_strategy(sc, envelope, name, b, seed, criteria=criteria, executor=ex)
-                        nominal = nominal or r.runs[0]
-                        fail = (
-                            r.runs[r.first_failure_index].stress_point
-                            if r.first_failure_index is not None
-                            else None
+                nominal: dict[str, Any] | None = None
+                for (strat, seed), (outcome, nom) in zip(tasks, outs, strict=True):
+                    per_strategy[strat].append(outcome)
+                    nominal = nominal or nom
+                    if (
+                        outcome.decision == "rejected"
+                        and oracle.label == "no_failure_found"
+                        and outcome.failing_point
+                    ):
+                        misses.append(
+                            {"strategy": strat, "seed": seed, "failing_point": outcome.failing_point}
                         )
-                        per_strategy[strat].append(
-                            SeedOutcome(
-                                seed=seed,
-                                decision=r.decision,
-                                first_failure_index=r.first_failure_index,
-                                unsafe_runs=r.unsafe_runs,
-                                worst_margin_m=r.runs[r.worst_run_index].margin_m,
-                                runtime_s=r.runtime_s,
-                                failing_point=fail,
-                            )
-                        )
-                        if r.decision == "rejected" and oracle.label == "no_failure_found" and fail:
-                            misses.append({"strategy": strat, "seed": seed, "failing_point": fail})
                 assert nominal is not None
+                nominal_metrics = RunMetrics.model_validate(nominal["metrics"])
                 cases.append(
                     CaseResult(
                         case_id=c["case_id"],
@@ -215,8 +239,8 @@ def run_benchmark(
                         role=group["role"],
                         category=c["category"],
                         intervention=c["intervention"],
-                        nominal_outcome=nominal.outcome,
-                        nominal_moving_separation_m=nominal.metrics.min_moving_separation_m,
+                        nominal_outcome=str(nominal["outcome"]),
+                        nominal_moving_separation_m=nominal_metrics.min_moving_separation_m,
                         oracle=oracle,
                         strategies=per_strategy,
                         oracle_misses=misses,
