@@ -45,7 +45,12 @@ async function request<T>(path: string, init?: RequestInit & { timeoutMs?: numbe
   }
   clearTimeout(timer);
   const text = await res.text();
-  const body = text ? JSON.parse(text) : null;
+  let body: Record<string, any> | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    throw new ApiError(res.status, "bad_response", `The API returned an unexpected response (HTTP ${res.status}). Check that the API server is running and reachable at /api.`);
+  }
   if (!res.ok) {
     const e = body?.error;
     throw new ApiError(res.status, e?.code ?? "http_error", e?.message ?? `HTTP ${res.status}`, e?.details);
