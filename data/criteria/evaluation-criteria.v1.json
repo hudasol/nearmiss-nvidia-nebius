@@ -1,0 +1,14 @@
+{
+  "id": "nearmiss.criteria/1",
+  "title": "Forward-travel pedestrian exposure criteria, version 1",
+  "decision_metric": "min_moving_separation_m",
+  "near_miss_threshold_m": 0.5,
+  "run_outcomes": {
+    "collision": "Footprints touch or overlap at any instant.",
+    "near_miss": "No contact, but the clearance between the moving forklift and an exposed pedestrian falls below near_miss_threshold_m.",
+    "clear": "Clearance stays at or above near_miss_threshold_m whenever the forklift is moving and the pedestrian is ahead of or beside it."
+  },
+  "intervention_rule": "An intervention is REJECTED for a stress envelope if any executed run inside that envelope is a collision or near miss. It is ACCEPTED only if every executed run is clear.",
+  "rationale": "0.5 m is a deliberately lenient clearance: many site rules require 1 m or more between pedestrians and moving trucks. A run below 0.5 m is unacceptable under any common rule, so the threshold does not overstate failures.",
+  "fixed_before_benchmark": true
+}
