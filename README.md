@@ -40,10 +40,20 @@ Built for the Nebius × NVIDIA Global AI Hackathon 2026, Physical AI track.
 ## What it found
 
 On the reference scenario, moving the pallet stack 3 m west raises the replayed clearance from
-0.29 m to 3.41 m, and moving the crossing to x = 27 m raises it to 2.49 m. Both look like fixes.
-Under stress, both fail in specific timing and speed combinations. The conventional sweep
-often misses these failures; the targeted search usually finds them. Measured rates are in
-[Benchmark results](#benchmark).
+0.29 m to 3.41 m, and moving the crossing to x = 27 m raises it to 2.49 m. Both look like fixes,
+and both fail under stress inside the site's operating envelope.
+
+The preregistered benchmark (28 cases, 4 synthetic scenarios, 30 seeds, 48 runs per
+evaluation, labels from an independent 8,192-run reference sweep):
+
+- A replay-only check accepted all 13 interventions that clear the replay but fail under stress.
+- On development scenarios, targeted search caught unsafe interventions in 94.8 % of
+  evaluations against 38.9 % for a conventional Latin hypercube sweep with the same budget.
+- On held-out scenarios both workflows caught 100 %, so the preregistered hypothesis is **not
+  supported** there. The targeted search also found real near misses in one held-out case that
+  the reference sweep missed, which the preregistered formulas count as false rejections.
+
+Full results, deviations and caveats: [docs/benchmark-results.md](docs/benchmark-results.md).
 
 ## Architecture
 
