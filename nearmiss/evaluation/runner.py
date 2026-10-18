@@ -106,8 +106,8 @@ def run_strategy(
     """Run one strategy to its budget against an (already intervened) scenario."""
     if strategy not in STRATEGIES:
         raise ValueError(f"unknown strategy '{strategy}'")
-    if budget < 2:
-        raise ValueError("budget must allow the nominal run plus at least one stress run")
+    if budget < 1:
+        raise ValueError("budget must allow at least the nominal run")
     criteria = criteria or load_criteria()
     mapper = make_mapper(scenario, executor)
     t0 = time.perf_counter()
