@@ -38,7 +38,7 @@ from pydantic import BaseModel
 from nearmiss.domain import geometry as gm
 from nearmiss.domain.models import ForkliftSpec, Scenario
 
-ENGINE_VERSION = "nearmiss-kinematic/1.0.0"
+ENGINE_VERSION = "nearmiss-kinematic/1.1.0"
 
 #: Simulated time kept after the interaction is physically over.
 TERMINATION_TAIL_S = 2.0
@@ -463,20 +463,18 @@ def simulate(scenario: Scenario) -> Trajectory:
             alongside = abs(gm.to_local(cand_pos, next_center, next_heading)[0]) <= (
                 fk.length_m / 2.0
             )
-            too_close = (
-                gm.rectangle_disc_separation(
-                    next_center, fk.length_m, fk.width_m, next_heading, cand_pos, ped.radius_m
-                )
-                < PEDESTRIAN_STANDOFF_M
+            cand_sep = gm.rectangle_disc_separation(
+                next_center, fk.length_m, fk.width_m, next_heading, cand_pos, ped.radius_m
             )
+            cur_sep = gm.rectangle_disc_separation(
+                next_center, fk.length_m, fk.width_m, next_heading, ped_pos, ped.radius_m
+            )
+            # Only steps that bring the pedestrian closer than the stand-off are refused;
+            # stepping away from (or along) a truck that is already close is allowed.
+            too_close = cand_sep < PEDESTRIAN_STANDOFF_M and cand_sep < cur_sep - 1e-9
             blocked = too_close and (stationary or alongside)
             # After contact the pedestrian does not try to walk out of the footprint.
-            overlapping = (
-                gm.rectangle_disc_separation(
-                    next_center, fk.length_m, fk.width_m, next_heading, ped_pos, ped.radius_m
-                )
-                <= 0.0
-            )
+            overlapping = cur_sep <= 0.0
             if not blocked:
                 ped_s = candidate_s
                 ped_moving = True
