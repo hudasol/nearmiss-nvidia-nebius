@@ -275,3 +275,21 @@ METRIC_DEFINITIONS: dict[str, MetricDefinition] = {
         ),
     )
 }
+
+
+def separation_series(scenario: Scenario, traj: Trajectory) -> list[float]:
+    """Footprint clearance at every recorded frame (for timelines and inspection)."""
+    return [
+        round(
+            _separation(
+                scenario,
+                traj.forklift_x[i],
+                traj.forklift_y[i],
+                traj.forklift_heading[i],
+                traj.pedestrian_x[i],
+                traj.pedestrian_y[i],
+            ),
+            4,
+        )
+        for i in range(len(traj.t))
+    ]
