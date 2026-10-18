@@ -21,7 +21,7 @@
   ],
   "obstructions": [
     { "id": "stair", "label": "Mezzanine stair", "kind": "equipment", "geometry": { "center": [21.6, 4.0], "length": 2.0, "width": 4.0, "rotation_deg": 0 }, "height_m": 3.5, "opaque": true, "movable": false, "provenance": "observed", "source": "synthetic mezzanine drawing" },
-    { "id": "cage-row", "label": "Stock cage row", "kind": "pallet_stack", "geometry": { "center": [23.5, 6.2], "length": 2.4, "width": 1.0, "rotation_deg": 0 }, "height_m": 1.8, "opaque": true, "movable": true, "provenance": "observed", "source": "synthetic: incident-day floor photo" }
+    { "id": "cage-row", "label": "Stock cage row", "kind": "pallet_stack", "geometry": { "center": [23.9, 6.2], "length": 2.4, "width": 1.0, "rotation_deg": 0 }, "height_m": 1.8, "opaque": true, "movable": true, "provenance": "observed", "source": "synthetic: incident-day floor photo" }
   ],
   "forklift": {
     "id": "fl-21",
