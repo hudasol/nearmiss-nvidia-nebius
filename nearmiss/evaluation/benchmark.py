@@ -75,23 +75,36 @@ class CaseResult(BaseModel):
 
 
 def scenario_envelope(scenario: Scenario, interventions: list[dict[str, Any]]) -> StressEnvelope:
+    """Default envelope for all seven axes; the start-offset range is widened to the
+    compiler's corrected range if any case would otherwise be timing-unreachable."""
     env = StressEnvelope(axes=[default_axis(n, scenario) for n in STRESS_AXIS_META])
-    if not interventions:
-        return env
-    spec = {
-        "title": "benchmark envelope check",
-        "scenario_id": scenario.id,
-        "arms": [{"intervention": iv} for iv in interventions],
-        "stress": env.model_dump(mode="json"),
-        "budget_per_arm": 48,
-    }
-    result = compile_experiment(spec, lambda _id: scenario)
-    errors = [f for f in result.findings if f.severity == "error"]
-    if errors and all(f.code == "timing_unreachable" for f in errors) and result.corrected_spec:
-        return StressEnvelope.model_validate(result.corrected_spec["stress"])
-    if errors:
-        raise ValueError(f"{scenario.id}: benchmark cases do not compile: {[f.code for f in errors]}")
-    return env
+    lo = env.axis("pedestrian_start_offset").low  # type: ignore[union-attr]
+    hi = env.axis("pedestrian_start_offset").high  # type: ignore[union-attr]
+    for iv in interventions:
+        spec = {
+            "title": "benchmark envelope check",
+            "scenario_id": scenario.id,
+            "arms": [{"intervention": iv}],
+            "stress": env.model_dump(mode="json"),
+            "budget_per_arm": 48,
+        }
+        result = compile_experiment(spec, lambda _id: scenario)
+        errors = [f for f in result.findings if f.severity == "error"]
+        if not errors:
+            continue
+        if all(f.code == "timing_unreachable" for f in errors) and result.corrected_spec:
+            corrected = StressEnvelope.model_validate(result.corrected_spec["stress"])
+            axis = corrected.axis("pedestrian_start_offset")
+            assert axis is not None
+            lo, hi = min(lo, axis.low), max(hi, axis.high)
+            continue
+        raise ValueError(f"{scenario.id}/{iv['id']} does not compile: {[f.code for f in errors]}")
+    return StressEnvelope(
+        axes=[
+            a.model_copy(update={"low": lo, "high": hi}) if a.name == "pedestrian_start_offset" else a
+            for a in env.axes
+        ]
+    )
 
 
 def _oracle(
