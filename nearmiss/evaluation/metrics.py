@@ -229,3 +229,67 @@ def compute_metrics(scenario: Scenario, traj: Trajectory) -> RunMetrics:
         forklift_peak_speed_mps=round(max(traj.forklift_speed), 6),
         forklift_speed_at_min_sep_mps=round(traj.forklift_speed[i_min], 6),
     )
+
+
+class MetricDefinition(BaseModel):
+    name: str
+    unit: str
+    description: str
+    supports_clearance_claim: bool
+
+
+#: Registry used by the compiler to check that requested metrics exist and can support
+#: the experiment's stated claim.
+METRIC_DEFINITIONS: dict[str, MetricDefinition] = {
+    d.name: d
+    for d in (
+        MetricDefinition(
+            name="min_moving_separation_m",
+            unit="m",
+            description="Minimum clearance between the moving forklift and an exposed pedestrian",
+            supports_clearance_claim=True,
+        ),
+        MetricDefinition(
+            name="collision",
+            unit="boolean",
+            description="Footprints touch or overlap at any instant",
+            supports_clearance_claim=True,
+        ),
+        MetricDefinition(
+            name="min_separation_m",
+            unit="m",
+            description="Minimum clearance at any instant, including stationary truck",
+            supports_clearance_claim=False,
+        ),
+        MetricDefinition(
+            name="min_ttc_s",
+            unit="s",
+            description="Constant-velocity time-to-collision (ignores braking)",
+            supports_clearance_claim=False,
+        ),
+        MetricDefinition(
+            name="pet_s",
+            unit="s",
+            description="Post-encroachment time at the route-crossing conflict zone",
+            supports_clearance_claim=False,
+        ),
+    )
+}
+
+
+def separation_series(scenario: Scenario, traj: Trajectory) -> list[float]:
+    """Footprint clearance at every recorded frame (for timelines and inspection)."""
+    return [
+        round(
+            _separation(
+                scenario,
+                traj.forklift_x[i],
+                traj.forklift_y[i],
+                traj.forklift_heading[i],
+                traj.pedestrian_x[i],
+                traj.pedestrian_y[i],
+            ),
+            4,
+        )
+        for i in range(len(traj.t))
+    ]

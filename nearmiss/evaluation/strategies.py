@@ -83,7 +83,9 @@ class ConflictTiming:
 
 
 def conflict_timing(scenario: Scenario, point: StressPoint) -> ConflictTiming | None:
-    stressed = apply_stress(scenario, {k: v for k, v in point.items() if k != "pedestrian_start_offset"})
+    stressed = apply_stress(
+        scenario, {k: v for k, v in point.items() if k != "pedestrian_start_offset"}
+    )
     fk, ped = stressed.forklift, stressed.pedestrian
     hit = gm.Polyline(fk.route).first_intersection(gm.Polyline(ped.route))
     if hit is None:
@@ -94,7 +96,9 @@ def conflict_timing(scenario: Scenario, point: StressPoint) -> ConflictTiming | 
     lane_edge = fk.width_m / 2.0 + ped.radius_m
     t_lane = ped.start_time.value + max(0.0, s_ped - lane_edge) / ped.walking_speed.value
     t_stop = fk.reaction_time.value + v / fk.braking_decel.value
-    return ConflictTiming(forklift_front_s=t_front, pedestrian_lane_s=t_lane, stopping_time_s=t_stop)
+    return ConflictTiming(
+        forklift_front_s=t_front, pedestrian_lane_s=t_lane, stopping_time_s=t_stop
+    )
 
 
 def _aligned_offset(
@@ -124,7 +128,11 @@ def _lead_fraction_of(scenario: Scenario, point: StressPoint) -> float:
 
 def _corner_configs(envelope: StressEnvelope, base: StressPoint) -> list[StressPoint]:
     worst = dict(base)
-    for name, end in (("forklift_speed", "high"), ("reaction_time", "high"), ("braking_decel", "low")):
+    for name, end in (
+        ("forklift_speed", "high"),
+        ("reaction_time", "high"),
+        ("braking_decel", "low"),
+    ):
         axis = envelope.axis(name)
         if axis is not None:
             worst[name] = axis.high if end == "high" else axis.low
@@ -191,12 +199,15 @@ def targeted_search(
             for a in envelope.axes:
                 if a.name == "pedestrian_start_offset":
                     continue
-                child[a.name] = rng.gauss(parent[a.name], ADAPTIVE_SIGMA_FRACTION * (a.high - a.low))
+                child[a.name] = rng.gauss(
+                    parent[a.name], ADAPTIVE_SIGMA_FRACTION * (a.high - a.low)
+                )
             child = _clamp(envelope, child)
             lead = _lead_fraction_of(scenario, parent)
             lead_sigma = ADAPTIVE_LEAD_SIGMA_S / max(
-                1e-6, (conflict_timing(scenario, child) or ConflictTiming(0, 0, 1)).stopping_time_s
-                + LEAD_AFTER_S
+                1e-6,
+                (conflict_timing(scenario, child) or ConflictTiming(0, 0, 1)).stopping_time_s
+                + LEAD_AFTER_S,
             )
             batch.append(_aligned_offset(scenario, envelope, child, rng.gauss(lead, lead_sigma)))
         if not batch:

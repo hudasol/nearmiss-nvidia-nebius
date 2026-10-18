@@ -151,3 +151,31 @@ def test_downsample_keeps_last_frame(reference: Scenario) -> None:
     assert small.t[0] == traj.t[0]
     assert small.t[-1] == traj.t[-1]
     assert len(small.t) == len(small.forklift_x) == len(small.hazard)
+
+
+def test_pedestrian_at_front_corner_walks_around_stopped_truck(reference: Scenario) -> None:
+    """Regression: a pedestrian stopped within the stand-off of the truck's front corner
+    used to freeze for the rest of the run because every step was refused."""
+    from nearmiss.domain.models import RelocateObstruction
+
+    moved, _ = apply_intervention(
+        reference,
+        RelocateObstruction(id="r3", label="r3", obstruction_id="stack-a", offset_m=(-3.0, 0.0)),
+    )
+    sc = apply_stress(
+        moved,
+        {
+            "forklift_speed": 2.505,
+            "pedestrian_speed": 1.31,
+            "pedestrian_start_offset": 0.935,
+            "reaction_time": 1.385,
+            "braking_decel": 2.034,
+            "obstruction_shift_x": 0.904,
+            "obstruction_shift_y": 0.414,
+        },
+    )
+    traj = simulate(sc)
+    detours = [e for e in traj.events if e.kind == "pedestrian_detour"]
+    assert len(detours) <= 2
+    end = sc.pedestrian.route[-1]
+    assert math.hypot(traj.pedestrian_x[-1] - end[0], traj.pedestrian_y[-1] - end[1]) < 1e-6

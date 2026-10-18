@@ -38,8 +38,10 @@ from pydantic import BaseModel
 from nearmiss.domain import geometry as gm
 from nearmiss.domain.models import ForkliftSpec, Scenario
 
-ENGINE_VERSION = "nearmiss-kinematic/1.0.0"
+ENGINE_VERSION = "nearmiss-kinematic/1.1.0"
 
+#: Simulated time kept after the interaction is physically over.
+TERMINATION_TAIL_S = 2.0
 #: Below this speed the forklift counts as stationary for the pedestrian.
 STATIONARY_SPEED = 0.05
 #: Time a pedestrian waits at a stationary vehicle before walking around it.
@@ -232,7 +234,7 @@ def _detour_route(
     while probe < route.length:
         probe = min(route.length, probe + 0.1)
         p, _ = route.pose_at(probe)
-        plx, ply = gm.to_local(p, center, heading)
+        ply = gm.to_local(p, center, heading)[1]
         sep = gm.rectangle_disc_separation(center, fk.length_m, fk.width_m, heading, p, radius)
         if sep > PEDESTRIAN_STANDOFF_M + 0.1 and ply * far_y > 0:
             rejoin_s = probe
@@ -286,6 +288,20 @@ def simulate(scenario: Scenario) -> Trajectory:
     corridor_half_width = fk.width_m / 2.0 + ped.radius_m + fk.hazard_lateral_margin_m
     horizon = fk.prediction_horizon_s
     pred_steps = max(1, round(horizon / 0.25))
+
+    # Early termination: once the truck's rear has passed the crossing and the pedestrian
+    # has left the lane on the far side, no further crossing conflict is possible.
+    # The run continues for TERMINATION_TAIL_S so the replay shows the aftermath.
+    hit = fk_route.first_intersection(ped_route)
+    conflict_pt: gm.Point | None = None
+    conflict_heading = 0.0
+    ped_start_side = 0.0
+    if hit is not None:
+        conflict_pt = hit[0]
+        conflict_heading = fk_route.pose_at(hit[1])[1]
+        ped_start_side = gm.to_local(ped_route.points[0], conflict_pt, conflict_heading)[1]
+    lane_clear = fk.width_m / 2.0 + ped.radius_m + 0.5
+    end_time: float | None = None
 
     state = _ForkliftState(s=0.0, v=v_cruise)
     perception = _Perception()
@@ -352,12 +368,11 @@ def simulate(scenario: Scenario) -> Trajectory:
                         break
 
         # --- driver state machine -------------------------------------------------
-        if state.state == "cruise" or state.state == "resuming":
-            if hazard:
-                state.state = "reacting"
-                state.hazard_since = t
-                state.brake_at = t + reaction
-                perception.events.append(EngineEvent(t=t, kind="hazard_detected"))
+        if state.state in ("cruise", "resuming") and hazard:
+            state.state = "reacting"
+            state.hazard_since = t
+            state.brake_at = t + reaction
+            perception.events.append(EngineEvent(t=t, kind="hazard_detected"))
         if state.state == "reacting" and state.brake_at is not None and t >= state.brake_at - 1e-9:
             state.state = "braking"
             perception.events.append(
@@ -409,6 +424,16 @@ def simulate(scenario: Scenario) -> Trajectory:
         visible_col.append(visible)
         hazard_col.append(hazard)
 
+        if end_time is None and conflict_pt is not None:
+            rear_x = gm.to_local(center, conflict_pt, conflict_heading)[0] - fk.length_m / 2.0
+            ped_y = gm.to_local(ped_pos, conflict_pt, conflict_heading)[1]
+            fk_past = rear_x > ped.radius_m + 0.5
+            ped_past = ped_present and ped_y * ped_start_side < 0 and abs(ped_y) > lane_clear
+            if fk_past and ped_past:
+                end_time = t + TERMINATION_TAIL_S
+        if end_time is not None and t >= end_time - 1e-9:
+            break
+
         # --- integrate ------------------------------------------------------------
         if state.state in ("braking",):
             a = -decel
@@ -437,20 +462,18 @@ def simulate(scenario: Scenario) -> Trajectory:
             alongside = abs(gm.to_local(cand_pos, next_center, next_heading)[0]) <= (
                 fk.length_m / 2.0
             )
-            too_close = (
-                gm.rectangle_disc_separation(
-                    next_center, fk.length_m, fk.width_m, next_heading, cand_pos, ped.radius_m
-                )
-                < PEDESTRIAN_STANDOFF_M
+            cand_sep = gm.rectangle_disc_separation(
+                next_center, fk.length_m, fk.width_m, next_heading, cand_pos, ped.radius_m
             )
+            cur_sep = gm.rectangle_disc_separation(
+                next_center, fk.length_m, fk.width_m, next_heading, ped_pos, ped.radius_m
+            )
+            # Only steps that bring the pedestrian closer than the stand-off are refused;
+            # stepping away from (or along) a truck that is already close is allowed.
+            too_close = cand_sep < PEDESTRIAN_STANDOFF_M and cand_sep < cur_sep - 1e-9
             blocked = too_close and (stationary or alongside)
             # After contact the pedestrian does not try to walk out of the footprint.
-            overlapping = (
-                gm.rectangle_disc_separation(
-                    next_center, fk.length_m, fk.width_m, next_heading, ped_pos, ped.radius_m
-                )
-                <= 0.0
-            )
+            overlapping = cur_sep <= 0.0
             if not blocked:
                 ped_s = candidate_s
                 ped_moving = True
@@ -464,9 +487,7 @@ def simulate(scenario: Scenario) -> Trajectory:
                     )
                     if detour is not None:
                         ped_route, ped_s = detour, 0.0
-                        perception.events.append(
-                            EngineEvent(t=t_next, kind="pedestrian_detour")
-                        )
+                        perception.events.append(EngineEvent(t=t_next, kind="pedestrian_detour"))
                     ped_blocked_since = None
             else:
                 ped_blocked_since = None

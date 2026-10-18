@@ -7,15 +7,15 @@ are never silently merged into "exact" values.
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from nearmiss.domain import geometry as g
 
-SCENARIO_SCHEMA = "nearmiss.scenario/1"
-INTERVENTION_SCHEMA = "nearmiss.intervention/1"
-STRESS_SCHEMA = "nearmiss.stress/1"
+SCENARIO_SCHEMA: Final = "nearmiss.scenario/1"
+INTERVENTION_SCHEMA: Final = "nearmiss.intervention/1"
+STRESS_SCHEMA: Final = "nearmiss.stress/1"
 
 Point = tuple[float, float]
 ProvenanceKind = Literal["observed", "estimated", "assumed"]

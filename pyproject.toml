@@ -32,6 +32,8 @@ markers = [
     "slow: dense sweeps that take more than a few seconds",
 ]
 addopts = "-m 'not live'"
+log_level = "WARNING"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]
 
 [tool.ruff]
 line-length = 100
@@ -39,7 +41,8 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
-ignore = ["RUF001", "RUF002", "RUF003"]
+# Line length is enforced by `ruff format`; long string literals are left intact.
+ignore = ["RUF001", "RUF002", "RUF003", "E501"]
 
 [tool.mypy]
 python_version = "3.11"

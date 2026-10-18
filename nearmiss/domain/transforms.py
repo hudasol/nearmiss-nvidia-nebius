@@ -6,6 +6,7 @@ so the compiler can verify that only the intended variables changed.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from pydantic import BaseModel
@@ -116,7 +117,7 @@ def apply_intervention(
     raise TransformError(f"unsupported intervention type: {type(intervention).__name__}")
 
 
-def nominal_stress_point(scenario: Scenario, axes: list[str]) -> StressPoint:
+def nominal_stress_point(scenario: Scenario, axes: Sequence[str]) -> StressPoint:
     """The stress point that reproduces the scenario exactly."""
     values: dict[str, float] = {
         "forklift_speed": scenario.forklift.cruise_speed.value,

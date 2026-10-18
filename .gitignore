@@ -33,3 +33,7 @@ Thumbs.db
 # Playwright
 test-results/
 playwright-report/
+
+# Local agent tooling
+.claude/
+apps/web/.claude/

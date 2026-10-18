@@ -151,3 +151,10 @@ def test_stress_envelope_validation() -> None:
     axis = StressAxis(name="forklift_speed", low=2.0, high=3.0, unit="m/s")
     with pytest.raises(ValidationError):
         StressEnvelope(axes=[axis, axis])
+
+
+def test_reference_scenarios_pass_compiler_geometry_checks() -> None:
+    from nearmiss.compiler.compiler import geometry_findings
+
+    for sc in reference_scenarios().values():
+        assert geometry_findings(sc, sc.id) == [], sc.id
