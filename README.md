@@ -85,6 +85,10 @@ Token Factory (hosted Cosmos3 Reasoner was retired from Token Factory serverless
 | **NVIDIA Nemotron 3.5 Lightning** (`nvidia/Nemotron-3_5-Lightning`, open weights) | Incident-report interpretation and intervention candidates, with JSON output, reasoning disabled (`chat_template_kwargs.enable_thinking=false`), strict schema and domain validation | `nearmiss/integrations/model_tasks.py` |
 | **Nebius Token Factory** (OpenAI-compatible `https://api.tokenfactory.nebius.com/v1`) | Runtime inference calls; `/v1/models` checks that the configured NVIDIA model is live for the key, with fallback to other `nvidia/` Nemotron models | `nearmiss/integrations/nebius.py` |
 
+**Verification status:** the integration is implemented and tested against mock transports, but
+the live Token Factory call has not yet been verified on this build because no API key was
+available. Steps to verify it are in [docs/submission-checklist.md](docs/submission-checklist.md).
+
 Every model call is persisted (model requested and served, latency, tokens, status, raw
 output) and shown on the Integration page. The model never sees reference labels or
 acceptance criteria and never decides an outcome. Without a key, every deterministic
