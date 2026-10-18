@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from nearmiss.domain.models import Intervention, Scenario, StressEnvelope
 from nearmiss.domain.transforms import ParameterChange
 
-EXPERIMENT_SCHEMA = "nearmiss.experiment/1"
-PLAN_SCHEMA = "nearmiss.plan/1"
+EXPERIMENT_SCHEMA: Final = "nearmiss.experiment/1"
+PLAN_SCHEMA: Final = "nearmiss.plan/1"
 
 Claim = Literal["robust_clearance", "nominal_improvement"]
 StrategyName = Literal["targeted_search", "conventional_sweep"]

@@ -26,7 +26,12 @@ RELOCATE = {
     "obstruction_id": "stack-a",
     "offset_m": [-3.0, 0.0],
 }
-REROUTE = {"type": "reroute_crossing", "id": "cross-x30", "label": "Cross at x 30", "crossing_x_m": 30.0}
+REROUTE = {
+    "type": "reroute_crossing",
+    "id": "cross-x30",
+    "label": "Cross at x 30",
+    "crossing_x_m": 30.0,
+}
 
 
 def lookup(scenario_id: str) -> Scenario | None:
@@ -180,7 +185,9 @@ def test_timing_window_unreachable_for_rerouted_crossing() -> None:
     assert msg.path == "arms[0]"
     assert r.corrected_spec is not None and r.corrected_spec_status == "accepted"
     offset = next(
-        a for a in r.corrected_spec["stress"]["axes"] if a["name"] == "pedestrian_start_offset"  # type: ignore[index]
+        a
+        for a in r.corrected_spec["stress"]["axes"]
+        if a["name"] == "pedestrian_start_offset"  # type: ignore[index]
     )
     assert offset["low"] < -1.0
 

@@ -138,7 +138,12 @@ def build_report(store: Store, experiment_id: str) -> dict[str, Any]:
                         }
                     )
         nominal = next(
-            (x for x in runs if x["arm_id"] == arm_id and x["strategy"] == primary and x["idx"] == 0), None
+            (
+                x
+                for x in runs
+                if x["arm_id"] == arm_id and x["strategy"] == primary and x["idx"] == 0
+            ),
+            None,
         )
         verdict = arm_sum["verdict"] if arm_sum else None
         arms_out.append(
@@ -192,6 +197,7 @@ def build_report(store: Store, experiment_id: str) -> dict[str, Any]:
             )
         c = strategies.get("conventional_sweep")
         if c is not None and primary != "conventional_sweep" and c["decision"] != p["decision"]:
+
             def found(d: dict[str, Any]) -> str:
                 return (
                     f"found {d['unsafe_runs']} unsafe run{'s' if d['unsafe_runs'] != 1 else ''}"
@@ -204,7 +210,11 @@ def build_report(store: Store, experiment_id: str) -> dict[str, Any]:
                 f"'{arm['label']}', while targeted search {found(p)}."
             )
 
-    failure_cases.sort(key=lambda f: (f["min_moving_separation_m"] if f["min_moving_separation_m"] is not None else -9))
+    failure_cases.sort(
+        key=lambda f: (
+            f["min_moving_separation_m"] if f["min_moving_separation_m"] is not None else -9
+        )
+    )
     model_calls = [
         {
             "id": m["id"],
@@ -246,7 +256,9 @@ def build_report(store: Store, experiment_id: str) -> dict[str, Any]:
             "title": scenario.title,
             "data_origin": scenario.data_origin,
             "description": scenario.description,
-            "incident": None if scenario.incident is None else scenario.incident.model_dump(mode="json"),
+            "incident": None
+            if scenario.incident is None
+            else scenario.incident.model_dump(mode="json"),
             "parameters": _param_rows(scenario),
             "calibration": scenario.calibration.model_dump(mode="json"),
         },
@@ -262,7 +274,11 @@ def build_report(store: Store, experiment_id: str) -> dict[str, Any]:
         "stress_envelope": None
         if plan["stress"] is None
         else [
-            {**a, "description": STRESS_AXIS_META[a["name"]][2], "kind": STRESS_AXIS_META[a["name"]][1]}
+            {
+                **a,
+                "description": STRESS_AXIS_META[a["name"]][2],
+                "kind": STRESS_AXIS_META[a["name"]][1],
+            }
             for a in plan["stress"]["axes"]
         ],
         "headline": headline,
@@ -334,7 +350,10 @@ def report_markdown(rep: dict[str, Any]) -> str:
                 f"{_fmt(arm['nominal']['min_moving_separation_m'], 'm')}.",
                 "",
             ]
-        lines += ["| Workflow | Decision | Unsafe runs | Collisions | Worst clearance |", "| --- | --- | --- | --- | --- |"]
+        lines += [
+            "| Workflow | Decision | Unsafe runs | Collisions | Worst clearance |",
+            "| --- | --- | --- | --- | --- |",
+        ]
         for s in arm["strategies"].values():
             lines.append(
                 f"| {s['label']} | {s['decision']} | {s['unsafe_runs']} / {s['runs']} | {s['collisions']} | "
@@ -362,7 +381,10 @@ def report_markdown(rep: dict[str, Any]) -> str:
         "",
         "## Assumptions",
         "",
-        *[f"- {a['parameter']} = {a['value']} {a['unit']}: {a['source']}" for a in rep["assumptions"]],
+        *[
+            f"- {a['parameter']} = {a['value']} {a['unit']}: {a['source']}"
+            for a in rep["assumptions"]
+        ],
         "",
         "## Limitations",
         "",

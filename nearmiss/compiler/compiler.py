@@ -45,7 +45,12 @@ from nearmiss.simulation.engine import ENGINE_VERSION, canonical_json, scenario_
 ScenarioLookup = Callable[[str], Scenario | None]
 
 #: Axes a robustness claim must vary: they govern arrival timing and stopping distance.
-REQUIRED_AXES_ROBUST = ("forklift_speed", "pedestrian_speed", "pedestrian_start_offset", "reaction_time")
+REQUIRED_AXES_ROBUST = (
+    "forklift_speed",
+    "pedestrian_speed",
+    "pedestrian_start_offset",
+    "reaction_time",
+)
 RECOMMENDED_AXES = ("braking_decel",)
 MIN_BUDGET = {"targeted_search": 16, "conventional_sweep": 16}
 
@@ -65,7 +70,9 @@ def default_axis(name: str, scenario: Scenario) -> StressAxis:
     }
     lo_lim, hi_lim = STRESS_AXIS_LIMITS[name]
     lo, hi = ranges[name]
-    return StressAxis(name=name, low=round(max(lo_lim, lo), 3), high=round(min(hi_lim, hi), 3), unit=unit)  # type: ignore[arg-type]
+    return StressAxis(
+        name=name, low=round(max(lo_lim, lo), 3), high=round(min(hi_lim, hi), 3), unit=unit
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -246,7 +253,9 @@ def compile_experiment(raw: dict[str, Any], lookup: ScenarioLookup) -> Compilati
     try:
         spec = ExperimentSpec.model_validate(raw)
     except ValidationError as err:
-        return CompilationResult(status="rejected", findings=_schema_findings(err), original_spec=original)
+        return CompilationResult(
+            status="rejected", findings=_schema_findings(err), original_spec=original
+        )
 
     findings, corrected = _validate(spec, lookup)
     errors = [f for f in findings if f.severity == "error"]
@@ -254,24 +263,30 @@ def compile_experiment(raw: dict[str, Any], lookup: ScenarioLookup) -> Compilati
         scenario = lookup(spec.scenario_id)
         assert scenario is not None
         plan = build_plan(spec, scenario)
-        return CompilationResult(status="accepted", findings=findings, original_spec=original, plan=plan)
+        return CompilationResult(
+            status="accepted", findings=findings, original_spec=original, plan=plan
+        )
 
     corrected_dict: dict[str, object] | None = None
     corrected_status = None
     if corrected is not None and all(f.correctable for f in errors):
         corrected_dict = corrected.model_dump(mode="json")
         re_findings, _ = _validate(corrected, lookup)
-        corrected_status = "rejected" if any(f.severity == "error" for f in re_findings) else "accepted"
+        corrected_status = (
+            "rejected" if any(f.severity == "error" for f in re_findings) else "accepted"
+        )
     return CompilationResult(
         status="rejected",
         findings=findings,
         original_spec=original,
         corrected_spec=corrected_dict,
-        corrected_spec_status=corrected_status,  # type: ignore[arg-type]
+        corrected_spec_status=corrected_status,
     )
 
 
-def _validate(spec: ExperimentSpec, lookup: ScenarioLookup) -> tuple[list[Finding], ExperimentSpec | None]:
+def _validate(
+    spec: ExperimentSpec, lookup: ScenarioLookup
+) -> tuple[list[Finding], ExperimentSpec | None]:
     f: list[Finding] = []
     scenario = lookup(spec.scenario_id)
     if scenario is None:
@@ -301,7 +316,13 @@ def _validate(spec: ExperimentSpec, lookup: ScenarioLookup) -> tuple[list[Findin
         )
 
     f += [
-        Finding(code=x.code, severity=x.severity, path=f"scenario.{x.path}", message=x.message, hint=x.hint)
+        Finding(
+            code=x.code,
+            severity=x.severity,
+            path=f"scenario.{x.path}",
+            message=x.message,
+            hint=x.hint,
+        )
         for x in geometry_findings(scenario, "scenario")
         if x.severity == "error"
     ]
@@ -372,7 +393,11 @@ def _validate(spec: ExperimentSpec, lookup: ScenarioLookup) -> tuple[list[Findin
         try:
             resolved, declared = apply_intervention(scenario, iv)
         except TransformError as exc:
-            code = "unknown_obstruction" if "obstruction" in str(exc) else "intervention_not_applicable"
+            code = (
+                "unknown_obstruction"
+                if "obstruction" in str(exc)
+                else "intervention_not_applicable"
+            )
             f.append(
                 Finding(
                     code=code,
@@ -476,9 +501,7 @@ def _validate(spec: ExperimentSpec, lookup: ScenarioLookup) -> tuple[list[Findin
                     )
                 )
         has_movable = any(o.movable for o in scenario.obstructions)
-        relocates = any(
-            isinstance(a.intervention, RelocateObstruction) for a in spec.arms
-        )
+        relocates = any(isinstance(a.intervention, RelocateObstruction) for a in spec.arms)
         if relocates and has_movable and "obstruction_shift_x" not in present and env is not None:
             f.append(
                 Finding(
@@ -496,7 +519,11 @@ def _validate(spec: ExperimentSpec, lookup: ScenarioLookup) -> tuple[list[Findin
         for name in REQUIRED_AXES_ROBUST:
             if name not in {a.name for a in corrected_axes}:
                 corrected_axes.append(default_axis(name, scenario))
-        if relocates and has_movable and "obstruction_shift_x" not in {a.name for a in corrected_axes}:
+        if (
+            relocates
+            and has_movable
+            and "obstruction_shift_x" not in {a.name for a in corrected_axes}
+        ):
             corrected_axes.append(default_axis("obstruction_shift_x", scenario))
 
     if env is not None:
@@ -556,7 +583,9 @@ def _validate(spec: ExperimentSpec, lookup: ScenarioLookup) -> tuple[list[Findin
                         hint="The envelope should normally include the conditions of the incident.",
                     )
                 )
-            if a.name.startswith("obstruction_shift") and not any(o.movable for o in scenario.obstructions):
+            if a.name.startswith("obstruction_shift") and not any(
+                o.movable for o in scenario.obstructions
+            ):
                 f.append(
                     Finding(
                         code="stress_axis_no_effect",
@@ -584,7 +613,9 @@ def _validate(spec: ExperimentSpec, lookup: ScenarioLookup) -> tuple[list[Findin
                 if isinstance(arm.intervention, ProceduralMeasure):
                     continue
                 try:
-                    arm_scenarios.append((f"arms[{i}]", apply_intervention(scenario, arm.intervention)[0]))
+                    arm_scenarios.append(
+                        (f"arms[{i}]", apply_intervention(scenario, arm.intervention)[0])
+                    )
                 except TransformError:
                     continue
             for path, sc in arm_scenarios:
@@ -749,5 +780,7 @@ def build_plan(spec: ExperimentSpec, scenario: Scenario) -> ExperimentPlan:
         budget_per_arm=budget,
         seed=spec.seed,
         arms=arms,
-        total_runs=len(arms) * (len(strategies) if spec.claim == "robust_clearance" else 1) * budget,
+        total_runs=len(arms)
+        * (len(strategies) if spec.claim == "robust_clearance" else 1)
+        * budget,
     )

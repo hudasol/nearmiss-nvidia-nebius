@@ -143,7 +143,7 @@ class Store:
 
     def ping(self) -> bool:
         with self._lock:
-            return self._conn.execute("SELECT 1").fetchone()[0] == 1
+            return bool(self._conn.execute("SELECT 1").fetchone()[0] == 1)
 
     # --- scenarios -------------------------------------------------------------
 
@@ -156,12 +156,23 @@ class Store:
                    ON CONFLICT(id) DO UPDATE SET schema_version=excluded.schema_version,
                      origin=excluded.origin, title=excluded.title, parent_id=excluded.parent_id,
                      content_hash=excluded.content_hash, data=excluded.data""",
-                (sc.id, sc.schema_version, origin, sc.title, parent_id, scenario_hash(sc), data, now()),
+                (
+                    sc.id,
+                    sc.schema_version,
+                    origin,
+                    sc.title,
+                    parent_id,
+                    scenario_hash(sc),
+                    data,
+                    now(),
+                ),
             )
 
     def get_scenario(self, scenario_id: str) -> Scenario | None:
         with self._lock:
-            row = self._conn.execute("SELECT data FROM scenarios WHERE id=?", (scenario_id,)).fetchone()
+            row = self._conn.execute(
+                "SELECT data FROM scenarios WHERE id=?", (scenario_id,)
+            ).fetchone()
         return Scenario.model_validate_json(row["data"]) if row else None
 
     def list_scenarios(self) -> list[dict[str, Any]]:
@@ -233,8 +244,14 @@ class Store:
 
     def update_experiment(self, eid: str, **fields: Any) -> None:
         allowed = {
-            "status", "progress_done", "progress_total", "result_summary", "error",
-            "runtime_s", "started_at", "finished_at",
+            "status",
+            "progress_done",
+            "progress_total",
+            "result_summary",
+            "error",
+            "runtime_s",
+            "started_at",
+            "finished_at",
         }
         sets, vals = [], []
         for k, v in fields.items():
@@ -284,8 +301,15 @@ class Store:
             c.execute(
                 """INSERT OR REPLACE INTO strategy_results VALUES (?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    eid, arm_id, result["strategy"], result["seed"], result["budget"], result["decision"],
-                    result["unsafe_runs"], result["first_failure_index"], result["worst_run_index"],
+                    eid,
+                    arm_id,
+                    result["strategy"],
+                    result["seed"],
+                    result["budget"],
+                    result["decision"],
+                    result["unsafe_runs"],
+                    result["first_failure_index"],
+                    result["worst_run_index"],
                     result["runtime_s"],
                 ),
             )
@@ -293,9 +317,18 @@ class Store:
                 """INSERT OR REPLACE INTO runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                 [
                     (
-                        eid, arm_id, result["strategy"], r["index"], r["batch"], json.dumps(r["stress_point"]),
-                        r["config_hash"], r["trajectory_hash"], json.dumps(r["metrics"]), r["outcome"],
-                        r["margin_m"], r["elapsed_ms"],
+                        eid,
+                        arm_id,
+                        result["strategy"],
+                        r["index"],
+                        r["batch"],
+                        json.dumps(r["stress_point"]),
+                        r["config_hash"],
+                        r["trajectory_hash"],
+                        json.dumps(r["metrics"]),
+                        r["outcome"],
+                        r["margin_m"],
+                        r["elapsed_ms"],
                     )
                     for r in result["runs"]
                 ],
@@ -304,11 +337,14 @@ class Store:
     def strategy_results(self, eid: str) -> list[dict[str, Any]]:
         with self._lock:
             rows = self._conn.execute(
-                "SELECT * FROM strategy_results WHERE experiment_id=? ORDER BY arm_id, strategy", (eid,)
+                "SELECT * FROM strategy_results WHERE experiment_id=? ORDER BY arm_id, strategy",
+                (eid,),
             ).fetchall()
         return [dict(r) for r in rows]
 
-    def runs(self, eid: str, arm_id: str | None = None, strategy: str | None = None) -> list[dict[str, Any]]:
+    def runs(
+        self, eid: str, arm_id: str | None = None, strategy: str | None = None
+    ) -> list[dict[str, Any]]:
         q = "SELECT * FROM runs WHERE experiment_id=?"
         args: list[Any] = [eid]
         if arm_id:
@@ -342,17 +378,30 @@ class Store:
                    latency_ms, prompt_tokens, completion_tokens, attempts, finish_reason, status, error_kind,
                    error, raw_output, result, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    mid, outcome["task"], scenario_id, outcome.get("request_hash", ""),
-                    outcome.get("model_requested"), outcome.get("model_served"), outcome.get("latency_ms"),
-                    outcome.get("prompt_tokens"), outcome.get("completion_tokens"), outcome.get("attempts"),
-                    outcome.get("finish_reason"), outcome["status"], outcome.get("error_kind"),
-                    outcome.get("error"), outcome.get("raw_output"),
-                    None if outcome.get("result") is None else json.dumps(outcome["result"]), now(),
+                    mid,
+                    outcome["task"],
+                    scenario_id,
+                    outcome.get("request_hash", ""),
+                    outcome.get("model_requested"),
+                    outcome.get("model_served"),
+                    outcome.get("latency_ms"),
+                    outcome.get("prompt_tokens"),
+                    outcome.get("completion_tokens"),
+                    outcome.get("attempts"),
+                    outcome.get("finish_reason"),
+                    outcome["status"],
+                    outcome.get("error_kind"),
+                    outcome.get("error"),
+                    outcome.get("raw_output"),
+                    None if outcome.get("result") is None else json.dumps(outcome["result"]),
+                    now(),
                 ),
             )
         return mid
 
-    def model_calls(self, scenario_id: str | None = None, task: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
+    def model_calls(
+        self, scenario_id: str | None = None, task: str | None = None, limit: int = 50
+    ) -> list[dict[str, Any]]:
         q = "SELECT * FROM model_calls WHERE 1=1"
         args: list[Any] = []
         if scenario_id:

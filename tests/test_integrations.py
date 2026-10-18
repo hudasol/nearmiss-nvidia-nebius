@@ -40,7 +40,9 @@ def completion(content: str, finish: str = "stop") -> dict[str, Any]:
     }
 
 
-def make_client(handler: Callable[[httpx.Request], httpx.Response], retries: int = 2) -> TokenFactoryClient:
+def make_client(
+    handler: Callable[[httpx.Request], httpx.Response], retries: int = 2
+) -> TokenFactoryClient:
     cfg = NebiusConfig(api_key="test-key", max_retries=retries, timeout_s=5)
     return TokenFactoryClient(cfg, transport=httpx.MockTransport(handler))
 
@@ -50,7 +52,9 @@ def no_sleep(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(nebius.time, "sleep", lambda _s: None)
 
 
-def router(chat: Callable[[dict[str, Any]], httpx.Response]) -> Callable[[httpx.Request], httpx.Response]:
+def router(
+    chat: Callable[[dict[str, Any]], httpx.Response],
+) -> Callable[[httpx.Request], httpx.Response]:
     def handle(req: httpx.Request) -> httpx.Response:
         assert req.headers["Authorization"] == "Bearer test-key"
         if req.url.path.endswith("/models"):
@@ -142,15 +146,40 @@ def test_interpretation_validation_rules() -> None:
         {
             "summary": "Blind corner near miss.",
             "parameters": [
-                {"name": "forklift.cruise_speed", "value": 2.6, "unit": "m/s", "provenance": "observed",
-                 "evidence": "Telematics recorded 2.6 m/s."},
-                {"name": "incident.closest_approach", "value": 0.33, "unit": "m", "provenance": "observed",
-                 "evidence": "roughly a third of a metre away"},
-                {"name": "pedestrian.walking_speed", "value": 1.4, "unit": "m/s", "provenance": "estimated",
-                 "evidence": "the picker was strolling"},
-                {"name": "forklift.braking_decel", "value": 12.0, "unit": "m/s²", "provenance": "assumed"},
-                {"name": "forklift.reaction_time", "value": 1.0, "unit": "s", "provenance": "assumed",
-                 "rationale": "typical"},
+                {
+                    "name": "forklift.cruise_speed",
+                    "value": 2.6,
+                    "unit": "m/s",
+                    "provenance": "observed",
+                    "evidence": "Telematics recorded 2.6 m/s.",
+                },
+                {
+                    "name": "incident.closest_approach",
+                    "value": 0.33,
+                    "unit": "m",
+                    "provenance": "observed",
+                    "evidence": "roughly a third of a metre away",
+                },
+                {
+                    "name": "pedestrian.walking_speed",
+                    "value": 1.4,
+                    "unit": "m/s",
+                    "provenance": "estimated",
+                    "evidence": "the picker was strolling",
+                },
+                {
+                    "name": "forklift.braking_decel",
+                    "value": 12.0,
+                    "unit": "m/s²",
+                    "provenance": "assumed",
+                },
+                {
+                    "name": "forklift.reaction_time",
+                    "value": 1.0,
+                    "unit": "s",
+                    "provenance": "assumed",
+                    "rationale": "typical",
+                },
                 {"name": "forklift.colour", "value": 1.0, "provenance": "assumed"},
             ],
         }
@@ -173,12 +202,19 @@ def test_interpret_incident_end_to_end_with_mock() -> None:
         "summary": "Pedestrian emerged from behind a pallet stack.",
         "contributing_factors": ["sightline blocked by staged pallets"],
         "parameters": [
-            {"name": "forklift.cruise_speed", "value": 2.6, "unit": "m/s", "provenance": "observed",
-             "evidence": "Telematics recorded 2.6 m/s."}
+            {
+                "name": "forklift.cruise_speed",
+                "value": 2.6,
+                "unit": "m/s",
+                "provenance": "observed",
+                "evidence": "Telematics recorded 2.6 m/s.",
+            }
         ],
         "open_questions": ["Was the stack there every day?"],
     }
-    client = make_client(router(lambda b: httpx.Response(200, json=completion(json.dumps(payload)))))
+    client = make_client(
+        router(lambda b: httpx.Response(200, json=completion(json.dumps(payload))))
+    )
     outcome, interp = interpret_incident(client, NARRATIVE)
     assert outcome.status == "ok" and interp is not None
     assert outcome.model_served == "nvidia/Nemotron-3_5-Lightning"
@@ -187,7 +223,12 @@ def test_interpret_incident_end_to_end_with_mock() -> None:
 
 @pytest.mark.parametrize(
     "content",
-    ["not json at all", '```json\n{"summary": "x"}\n```', '["a list"]', '{"summary": 5, "parameters": "x"}'],
+    [
+        "not json at all",
+        '```json\n{"summary": "x"}\n```',
+        '["a list"]',
+        '{"summary": 5, "parameters": "x"}',
+    ],
 )
 def test_malformed_model_output_is_rejected(content: str) -> None:
     client = make_client(router(lambda b: httpx.Response(200, json=completion(content))))
@@ -198,7 +239,9 @@ def test_malformed_model_output_is_rejected(content: str) -> None:
 
 
 def test_truncated_output_is_rejected() -> None:
-    client = make_client(router(lambda b: httpx.Response(200, json=completion('{"summ', finish="length"))))
+    client = make_client(
+        router(lambda b: httpx.Response(200, json=completion('{"summ', finish="length")))
+    )
     outcome, _ = interpret_incident(client, NARRATIVE)
     assert outcome.status == "invalid_output" and outcome.error_kind == "truncated"
 
@@ -208,10 +251,25 @@ def test_candidate_validation(reference: Scenario) -> None:
         reference,
         {
             "candidates": [
-                {"type": "relocate_obstruction", "obstruction_id": "stack-a", "offset_m": [-4, 0],
-                 "label": "Move stack west", "rationale": "Open the sightline."},
-                {"type": "relocate_obstruction", "obstruction_id": "column-c7", "offset_m": [1, 0], "label": "x"},
-                {"type": "relocate_obstruction", "obstruction_id": "stack-a", "offset_m": [0, 3], "label": "into aisle"},
+                {
+                    "type": "relocate_obstruction",
+                    "obstruction_id": "stack-a",
+                    "offset_m": [-4, 0],
+                    "label": "Move stack west",
+                    "rationale": "Open the sightline.",
+                },
+                {
+                    "type": "relocate_obstruction",
+                    "obstruction_id": "column-c7",
+                    "offset_m": [1, 0],
+                    "label": "x",
+                },
+                {
+                    "type": "relocate_obstruction",
+                    "obstruction_id": "stack-a",
+                    "offset_m": [0, 3],
+                    "label": "into aisle",
+                },
                 {"type": "reroute_crossing", "crossing_x_m": 30, "label": "Cross at 30"},
                 {"type": "reroute_crossing", "crossing_x_m": 99, "label": "Cross at 99"},
                 {"type": "speed_limit", "value": 1.5},
@@ -226,8 +284,14 @@ def test_candidate_validation(reference: Scenario) -> None:
 
 
 def test_propose_interventions_with_mock(reference: Scenario) -> None:
-    payload = {"candidates": [{"type": "remove_obstruction", "obstruction_id": "stack-a", "label": "Remove stack A"}]}
-    client = make_client(router(lambda b: httpx.Response(200, json=completion(json.dumps(payload)))))
+    payload = {
+        "candidates": [
+            {"type": "remove_obstruction", "obstruction_id": "stack-a", "label": "Remove stack A"}
+        ]
+    }
+    client = make_client(
+        router(lambda b: httpx.Response(200, json=completion(json.dumps(payload))))
+    )
     outcome, checks = propose_interventions(client, reference, {"min_moving_separation_m": 0.29})
     assert outcome.status == "ok" and checks is not None and checks[0].status == "valid"
 
@@ -241,7 +305,7 @@ def test_live_token_factory_call(reference: Scenario) -> None:
     model = client.resolve_model()
     assert model.lower().startswith("nvidia/")
     assert reference.incident is not None
-    outcome, interp = interpret_incident(client, reference.incident.narrative)
+    outcome, _ = interpret_incident(client, reference.incident.narrative)
     print(outcome.model_dump_json(indent=1))
     assert outcome.status in ("ok", "invalid_output")
     assert outcome.model_served

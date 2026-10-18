@@ -234,7 +234,7 @@ def _detour_route(
     while probe < route.length:
         probe = min(route.length, probe + 0.1)
         p, _ = route.pose_at(probe)
-        plx, ply = gm.to_local(p, center, heading)
+        ply = gm.to_local(p, center, heading)[1]
         sep = gm.rectangle_disc_separation(center, fk.length_m, fk.width_m, heading, p, radius)
         if sep > PEDESTRIAN_STANDOFF_M + 0.1 and ply * far_y > 0:
             rejoin_s = probe
@@ -368,12 +368,11 @@ def simulate(scenario: Scenario) -> Trajectory:
                         break
 
         # --- driver state machine -------------------------------------------------
-        if state.state == "cruise" or state.state == "resuming":
-            if hazard:
-                state.state = "reacting"
-                state.hazard_since = t
-                state.brake_at = t + reaction
-                perception.events.append(EngineEvent(t=t, kind="hazard_detected"))
+        if state.state in ("cruise", "resuming") and hazard:
+            state.state = "reacting"
+            state.hazard_since = t
+            state.brake_at = t + reaction
+            perception.events.append(EngineEvent(t=t, kind="hazard_detected"))
         if state.state == "reacting" and state.brake_at is not None and t >= state.brake_at - 1e-9:
             state.state = "braking"
             perception.events.append(
@@ -488,9 +487,7 @@ def simulate(scenario: Scenario) -> Trajectory:
                     )
                     if detour is not None:
                         ped_route, ped_s = detour, 0.0
-                        perception.events.append(
-                            EngineEvent(t=t_next, kind="pedestrian_detour")
-                        )
+                        perception.events.append(EngineEvent(t=t_next, kind="pedestrian_detour"))
                     ped_blocked_since = None
             else:
                 ped_blocked_since = None

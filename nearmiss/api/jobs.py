@@ -34,7 +34,9 @@ class JobManager:
         # Experiments interrupted by a previous shutdown are not silently resumed.
         for eid in self.store.experiments_with_status("running"):
             self.store.update_experiment(
-                eid, status="failed", error="Interrupted by a server restart before completion.",
+                eid,
+                status="failed",
+                error="Interrupted by a server restart before completion.",
                 finished_at=now(),
             )
         if self.workers > 0:
@@ -102,27 +104,47 @@ class JobManager:
                 return eid in self._cancel
 
         try:
-            result = execute_plan(plan, executor=self._pool, on_progress=progress, should_cancel=should_cancel)
+            result = execute_plan(
+                plan, executor=self._pool, on_progress=progress, should_cancel=should_cancel
+            )
         except Cancelled:
             with self._lock:
                 self._cancel.discard(eid)
-            self.store.update_experiment(eid, status="cancelled", finished_at=now(),
-                                         runtime_s=round(time.perf_counter() - t0, 3))
+            self.store.update_experiment(
+                eid,
+                status="cancelled",
+                finished_at=now(),
+                runtime_s=round(time.perf_counter() - t0, 3),
+            )
             log.info("experiment %s cancelled", eid)
             return
         except Exception as exc:
-            self.store.update_experiment(eid, status="failed", error=f"{type(exc).__name__}: {exc}"[:2000],
-                                         finished_at=now(), runtime_s=round(time.perf_counter() - t0, 3))
+            self.store.update_experiment(
+                eid,
+                status="failed",
+                error=f"{type(exc).__name__}: {exc}"[:2000],
+                finished_at=now(),
+                runtime_s=round(time.perf_counter() - t0, 3),
+            )
             log.exception("experiment %s failed", eid)
             return
         for arm_run in result.arm_runs:
-            self.store.save_strategy_result(eid, arm_run.arm_id, arm_run.result.model_dump(mode="json"))
+            self.store.save_strategy_result(
+                eid, arm_run.arm_id, arm_run.result.model_dump(mode="json")
+            )
         summary = {
             "primary_strategy": result.primary_strategy,
-            "summaries": [s.model_dump(mode="json", exclude={"nominal", "worst_run"}) for s in result.summaries],
+            "summaries": [
+                s.model_dump(mode="json", exclude={"nominal", "worst_run"})
+                for s in result.summaries
+            ],
         }
         self.store.update_experiment(
-            eid, status="completed", finished_at=now(), runtime_s=result.runtime_s,
-            progress_done=plan.total_runs, result_summary=summary,
+            eid,
+            status="completed",
+            finished_at=now(),
+            runtime_s=result.runtime_s,
+            progress_done=plan.total_runs,
+            result_summary=summary,
         )
         log.info("experiment %s completed in %.1f s", eid, result.runtime_s)

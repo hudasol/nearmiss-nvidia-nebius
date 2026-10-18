@@ -36,12 +36,23 @@ from nearmiss.domain.models import (
 )
 from nearmiss.domain.transforms import TransformError, apply_intervention, apply_stress
 from nearmiss.evaluation.criteria import classify_run, load_criteria
-from nearmiss.evaluation.metrics import METRIC_DEFINITIONS, compute_metrics, conflict_zone, separation_series
+from nearmiss.evaluation.metrics import (
+    METRIC_DEFINITIONS,
+    compute_metrics,
+    conflict_zone,
+    separation_series,
+)
 from nearmiss.integrations.model_tasks import interpret_incident, propose_interventions
 from nearmiss.integrations.nebius import ModelError, NebiusConfig, TokenFactoryClient
 from nearmiss.persistence.store import Store, now
 from nearmiss.reporting.report import build_report, report_markdown
-from nearmiss.simulation.engine import ENGINE_VERSION, canonical_json, scenario_hash, sha256_hex, simulate
+from nearmiss.simulation.engine import (
+    ENGINE_VERSION,
+    canonical_json,
+    scenario_hash,
+    sha256_hex,
+    simulate,
+)
 
 log = logging.getLogger("nearmiss.api")
 INTERVENTION = TypeAdapter(Intervention)
@@ -145,10 +156,14 @@ def create_app(
 ) -> FastAPI:
     load_dotenv()
     configure_logging()
-    store = Store(db_path or os.environ.get("NEARMISS_DB_PATH", str(REPO_ROOT / "var" / "nearmiss.sqlite3")))
+    store = Store(
+        db_path or os.environ.get("NEARMISS_DB_PATH", str(REPO_ROOT / "var" / "nearmiss.sqlite3"))
+    )
     for sc in reference_scenarios().values():
         store.upsert_scenario(sc, origin="reference")
-    jobs = JobManager(store, workers if workers is not None else int(os.environ.get("NEARMISS_WORKERS", "0")))
+    jobs = JobManager(
+        store, workers if workers is not None else int(os.environ.get("NEARMISS_WORKERS", "0"))
+    )
     nebius_config = NebiusConfig.from_env()
     make_client = client_factory or (lambda: TokenFactoryClient(nebius_config))
 
@@ -174,20 +189,38 @@ def create_app(
         if request.url.path.startswith("/api/"):
             log.info(
                 "request",
-                extra={"request_id": rid, "path": f"{request.method} {request.url.path}",
-                       "status": response.status_code, "ms": round((time.perf_counter() - t0) * 1000, 1)},
+                extra={
+                    "request_id": rid,
+                    "path": f"{request.method} {request.url.path}",
+                    "status": response.status_code,
+                    "ms": round((time.perf_counter() - t0) * 1000, 1),
+                },
             )
         response.headers["x-request-id"] = rid
         return response
 
     @app.exception_handler(ApiError)
     async def api_error(_r: Request, exc: ApiError) -> JSONResponse:
-        return JSONResponse(status_code=exc.status, content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}})
+        return JSONResponse(
+            status_code=exc.status,
+            content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(_r: Request, exc: RequestValidationError) -> JSONResponse:
-        details = [{"path": ".".join(str(x) for x in e["loc"]), "message": e["msg"]} for e in exc.errors()]
-        return JSONResponse(status_code=422, content={"error": {"code": "invalid_request", "message": "Request failed validation.", "details": details}})
+        details = [
+            {"path": ".".join(str(x) for x in e["loc"]), "message": e["msg"]} for e in exc.errors()
+        ]
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": {
+                    "code": "invalid_request",
+                    "message": "Request failed validation.",
+                    "details": details,
+                }
+            },
+        )
 
     def scenario_or_404(scenario_id: str) -> Scenario:
         sc = store.get_scenario(scenario_id)
@@ -221,8 +254,13 @@ def create_app(
             "criteria": load_criteria().model_dump(),
             "metrics": [d.model_dump() for d in METRIC_DEFINITIONS.values()],
             "stress_axes": [
-                {"name": k, "unit": v[0], "kind": v[1], "description": v[2],
-                 "limits": STRESS_AXIS_LIMITS[k]}
+                {
+                    "name": k,
+                    "unit": v[0],
+                    "kind": v[1],
+                    "description": v[2],
+                    "limits": STRESS_AXIS_LIMITS[k],
+                }
                 for k, v in STRESS_AXIS_META.items()
             ],
             "overridable_parameters": list(OVERRIDABLE_PARAMETERS),
@@ -249,17 +287,30 @@ def create_app(
         try:
             models = client.list_models()
             resolved = client.resolve_model()
-            outcome.update(status="ok", model_requested=nebius_config.model, model_served=resolved,
-                           latency_ms=round((time.perf_counter() - t0) * 1000, 1),
-                           result={"nvidia_models": [m for m in models if m.lower().startswith("nvidia/")],
-                                   "catalog_size": len(models)})
+            outcome.update(
+                status="ok",
+                model_requested=nebius_config.model,
+                model_served=resolved,
+                latency_ms=round((time.perf_counter() - t0) * 1000, 1),
+                result={
+                    "nvidia_models": [m for m in models if m.lower().startswith("nvidia/")],
+                    "catalog_size": len(models),
+                },
+            )
         except ModelError as exc:
-            outcome.update(status="error", error_kind=exc.kind, error=str(exc),
-                           latency_ms=round((time.perf_counter() - t0) * 1000, 1))
+            outcome.update(
+                status="error",
+                error_kind=exc.kind,
+                error=str(exc),
+                latency_ms=round((time.perf_counter() - t0) * 1000, 1),
+            )
         store.record_model_call(None, outcome)
         if outcome["status"] != "ok":
-            raise ApiError(502 if outcome["error_kind"] != "not_configured" else 503,
-                           outcome["error_kind"], outcome["error"])
+            raise ApiError(
+                502 if outcome["error_kind"] != "not_configured" else 503,
+                outcome["error_kind"],
+                outcome["error"],
+            )
         return outcome
 
     # --- scenarios ------------------------------------------------------------
@@ -281,12 +332,23 @@ def create_app(
     def save_scenario(body: SaveScenarioRequest) -> dict[str, Any]:
         sc = body.scenario
         if sc.id in reference_scenarios():
-            raise ApiError(409, "reference_scenario_readonly", "Reference scenarios are read-only; save under a new id.")
+            raise ApiError(
+                409,
+                "reference_scenario_readonly",
+                "Reference scenarios are read-only; save under a new id.",
+            )
         if sc.data_origin == "synthetic_reference":
-            raise ApiError(422, "invalid_origin", "Saved scenarios must be 'user_defined' or 'model_assisted'.")
+            raise ApiError(
+                422, "invalid_origin", "Saved scenarios must be 'user_defined' or 'model_assisted'."
+            )
         findings = geometry_findings(sc, "scenario")
         if findings:
-            raise ApiError(422, "invalid_geometry", "Scenario geometry is invalid.", [f.model_dump() for f in findings])
+            raise ApiError(
+                422,
+                "invalid_geometry",
+                "Scenario geometry is invalid.",
+                [f.model_dump() for f in findings],
+            )
         store.upsert_scenario(sc, origin="user", parent_id=body.parent_id)
         return {"id": sc.id, "content_hash": scenario_hash(sc)}
 
@@ -311,7 +373,12 @@ def create_app(
                 raise ApiError(422, "invalid_intervention", str(exc)[:500]) from exc
         findings = geometry_findings(sc, "scenario")
         if findings:
-            raise ApiError(422, "invalid_geometry", "Scenario geometry is invalid.", [f.model_dump() for f in findings])
+            raise ApiError(
+                422,
+                "invalid_geometry",
+                "Scenario geometry is invalid.",
+                [f.model_dump() for f in findings],
+            )
         for k, v in body.stress_point.items():
             if k not in STRESS_AXIS_LIMITS:
                 raise ApiError(422, "unknown_stress_axis", f"Unknown stress axis '{k}'.")
@@ -324,8 +391,16 @@ def create_app(
     # --- model tasks ----------------------------------------------------------
 
     def _model_failure(task: str, scenario_id: str, exc: ModelError) -> ApiError:
-        store.record_model_call(scenario_id, {"task": task, "request_hash": "", "status": "error",
-                                              "error_kind": exc.kind, "error": str(exc)})
+        store.record_model_call(
+            scenario_id,
+            {
+                "task": task,
+                "request_hash": "",
+                "status": "error",
+                "error_kind": exc.kind,
+                "error": str(exc),
+            },
+        )
         status = 503 if exc.kind == "not_configured" else 502
         return ApiError(status, exc.kind, str(exc))
 
@@ -334,7 +409,9 @@ def create_app(
         sc = scenario_or_404(scenario_id)
         narrative = body.narrative or (sc.incident.narrative if sc.incident else None)
         if not narrative:
-            raise ApiError(422, "missing_narrative", "This scenario has no incident report to interpret.")
+            raise ApiError(
+                422, "missing_narrative", "This scenario has no incident report to interpret."
+            )
         try:
             outcome, _ = interpret_incident(make_client(), narrative)
         except ModelError as exc:
@@ -347,8 +424,11 @@ def create_app(
         sc = scenario_or_404(scenario_id)
         traj = simulate(sc)
         m = compute_metrics(sc, traj)
-        nominal = {"min_moving_separation_m": m.min_moving_separation_m, "collision": m.collision,
-                   "outcome": classify_run(m, load_criteria())}
+        nominal = {
+            "min_moving_separation_m": m.min_moving_separation_m,
+            "collision": m.collision,
+            "outcome": classify_run(m, load_criteria()),
+        }
         try:
             outcome, _ = propose_interventions(make_client(), sc, nominal)
         except ModelError as exc:
@@ -375,7 +455,10 @@ def create_app(
             existing = store.find_active_by_spec(result.plan.spec_hash)
             if existing:
                 response.status_code = 200
-                return {"experiment": store.get_experiment(existing, include_plan=False), "duplicate": True}
+                return {
+                    "experiment": store.get_experiment(existing, include_plan=False),
+                    "duplicate": True,
+                }
             eid = store.create_experiment(
                 title=str(spec.get("title", "Untitled experiment")),
                 scenario_id=str(spec.get("scenario_id")),
@@ -420,11 +503,15 @@ def create_app(
     def cancel_experiment(eid: str) -> dict[str, Any]:
         experiment_or_404(eid, include_plan=False)
         if not jobs.cancel(eid):
-            raise ApiError(409, "not_cancellable", "Only queued or running experiments can be cancelled.")
+            raise ApiError(
+                409, "not_cancellable", "Only queued or running experiments can be cancelled."
+            )
         return {"experiment": store.get_experiment(eid, include_plan=False)}
 
     @app.get("/api/v1/experiments/{eid}/runs")
-    def experiment_runs(eid: str, arm: str | None = None, strategy: str | None = None) -> list[dict[str, Any]]:
+    def experiment_runs(
+        eid: str, arm: str | None = None, strategy: str | None = None
+    ) -> list[dict[str, Any]]:
         experiment_or_404(eid, include_plan=False)
         return store.runs(eid, arm, strategy)
 
@@ -466,28 +553,53 @@ def create_app(
             md = report_markdown(build_report(store, eid))
         except ValueError as exc:
             raise ApiError(409, "report_unavailable", str(exc)) from exc
-        return PlainTextResponse(md, media_type="text/markdown",
-                                 headers={"Content-Disposition": f'attachment; filename="nearmiss-{eid}.md"'})
+        return PlainTextResponse(
+            md,
+            media_type="text/markdown",
+            headers={"Content-Disposition": f'attachment; filename="nearmiss-{eid}.md"'},
+        )
 
     # --- benchmark ------------------------------------------------------------
 
     @app.get("/api/v1/benchmark")
     def benchmark() -> dict[str, Any]:
         if not BENCHMARK_RESULTS.exists():
-            raise ApiError(404, "benchmark_not_run", "No benchmark results have been generated yet.")
+            raise ApiError(
+                404, "benchmark_not_run", "No benchmark results have been generated yet."
+            )
         data = json.loads(BENCHMARK_RESULTS.read_text(encoding="utf-8"))
         cases = []
         for c in data["cases"]:
-            cases.append({
-                "case_id": c["case_id"], "scenario_id": c["scenario_id"], "role": c["role"],
-                "category": c["category"], "intervention": c["intervention"],
-                "nominal_outcome": c["nominal_outcome"], "nominal_moving_separation_m": c["nominal_moving_separation_m"],
-                "oracle": c["oracle"],
-                "rejections": {k: sum(1 for o in v if o["decision"] == "rejected") for k, v in c["strategies"].items()},
-                "evaluations": {k: len(v) for k, v in c["strategies"].items()},
-                "oracle_misses": len(c["oracle_misses"]),
-            })
-        return {k: data[k] for k in ("benchmark_id", "generated_at", "runtime_s", "provenance", "config", "envelopes", "summary")} | {"cases": cases}
+            cases.append(
+                {
+                    "case_id": c["case_id"],
+                    "scenario_id": c["scenario_id"],
+                    "role": c["role"],
+                    "category": c["category"],
+                    "intervention": c["intervention"],
+                    "nominal_outcome": c["nominal_outcome"],
+                    "nominal_moving_separation_m": c["nominal_moving_separation_m"],
+                    "oracle": c["oracle"],
+                    "rejections": {
+                        k: sum(1 for o in v if o["decision"] == "rejected")
+                        for k, v in c["strategies"].items()
+                    },
+                    "evaluations": {k: len(v) for k, v in c["strategies"].items()},
+                    "oracle_misses": len(c["oracle_misses"]),
+                }
+            )
+        return {
+            k: data[k]
+            for k in (
+                "benchmark_id",
+                "generated_at",
+                "runtime_s",
+                "provenance",
+                "config",
+                "envelopes",
+                "summary",
+            )
+        } | {"cases": cases}
 
     # --- web UI ---------------------------------------------------------------
 

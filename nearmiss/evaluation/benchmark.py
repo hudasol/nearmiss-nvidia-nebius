@@ -101,7 +101,9 @@ def scenario_envelope(scenario: Scenario, interventions: list[dict[str, Any]]) -
         raise ValueError(f"{scenario.id}/{iv['id']} does not compile: {[f.code for f in errors]}")
     return StressEnvelope(
         axes=[
-            a.model_copy(update={"low": lo, "high": hi}) if a.name == "pedestrian_start_offset" else a
+            a.model_copy(update={"low": lo, "high": hi})
+            if a.name == "pedestrian_start_offset"
+            else a
             for a in env.axes
         ]
     )
@@ -121,7 +123,9 @@ def _oracle(
         m = RunMetrics.model_validate(mdump)
         if classify_run(m, criteria) != "clear":
             unsafe += 1
-        sep = m.min_separation_m if m.collision else (m.min_moving_separation_m or m.min_separation_m)
+        sep = (
+            m.min_separation_m if m.collision else (m.min_moving_separation_m or m.min_separation_m)
+        )
         if sep < worst[0]:
             worst = (sep, p)
     return OracleResult(
@@ -165,7 +169,11 @@ def _git_commit() -> str | None:
     try:
         return (
             subprocess.run(
-                ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+                ["git", "rev-parse", "HEAD"],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
             ).stdout.strip()
             or None
         )
@@ -201,7 +209,9 @@ def run_benchmark(
             for c in group["cases"]:
                 iv = INTERVENTION.validate_python(c["intervention"]) if c["intervention"] else None
                 sc = apply_intervention(base, iv)[0] if iv else base
-                print(f"[{time.perf_counter() - t_start:7.1f}s] {c['case_id']}: oracle…", flush=True)
+                print(
+                    f"[{time.perf_counter() - t_start:7.1f}s] {c['case_id']}: oracle…", flush=True
+                )
                 oracle = _oracle(sc, envelope, n_oracle, skip, ex)
                 sj = sc.model_dump(mode="json")
                 ej = envelope.model_dump(mode="json")
@@ -228,7 +238,11 @@ def run_benchmark(
                         and outcome.failing_point
                     ):
                         misses.append(
-                            {"strategy": strat, "seed": seed, "failing_point": outcome.failing_point}
+                            {
+                                "strategy": strat,
+                                "seed": seed,
+                                "failing_point": outcome.failing_point,
+                            }
                         )
                 assert nominal is not None
                 nominal_metrics = RunMetrics.model_validate(nominal["metrics"])
@@ -300,7 +314,9 @@ def summarise(cases: list[CaseResult]) -> dict[str, Any]:
     """Balanced metrics over (case, seed) evaluations, by subset."""
     subsets = {
         "all_interventions": [c for c in cases if c.category != "as_is"],
-        "held_out_interventions": [c for c in cases if c.category != "as_is" and c.role == "held_out"],
+        "held_out_interventions": [
+            c for c in cases if c.category != "as_is" and c.role == "held_out"
+        ],
         "development_interventions": [
             c for c in cases if c.category != "as_is" and c.role == "development"
         ],
@@ -310,7 +326,11 @@ def summarise(cases: list[CaseResult]) -> dict[str, Any]:
     for name, subset in subsets.items():
         unsafe = [c for c in subset if c.oracle.label == "unsafe"]
         safe = [c for c in subset if c.oracle.label == "no_failure_found"]
-        entry: dict[str, Any] = {"cases": len(subset), "unsafe_cases": len(unsafe), "safe_cases": len(safe)}
+        entry: dict[str, Any] = {
+            "cases": len(subset),
+            "unsafe_cases": len(unsafe),
+            "safe_cases": len(safe),
+        }
         for strat in STRATEGIES:
             rej_unsafe = sum(o.decision == "rejected" for c in unsafe for o in c.strategies[strat])
             n_unsafe = sum(len(c.strategies[strat]) for c in unsafe)

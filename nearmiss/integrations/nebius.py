@@ -118,7 +118,9 @@ class TokenFactoryClient:
             transport=self._transport,
         )
 
-    def _request(self, method: str, path: str, json: dict[str, Any] | None = None) -> tuple[dict[str, Any], int]:
+    def _request(
+        self, method: str, path: str, json: dict[str, Any] | None = None
+    ) -> tuple[dict[str, Any], int]:
         attempts = 0
         last: Exception | None = None
         with self._client() as client:
@@ -127,7 +129,9 @@ class TokenFactoryClient:
                 try:
                     resp = client.request(method, path, json=json)
                 except httpx.TimeoutException as exc:
-                    last = ModelTimeout(f"Token Factory did not respond within {self.config.timeout_s:.0f} s")
+                    last = ModelTimeout(
+                        f"Token Factory did not respond within {self.config.timeout_s:.0f} s"
+                    )
                     last.__cause__ = exc
                 except httpx.HTTPError as exc:
                     last = ModelUnavailable(f"Could not reach Token Factory: {type(exc).__name__}")
@@ -138,16 +142,24 @@ class TokenFactoryClient:
                             f"Token Factory rejected the API key (HTTP {resp.status_code})."
                         )
                     if resp.status_code == 404:
-                        raise ModelUnavailable(f"Model or endpoint not found (HTTP 404): {_detail(resp)}")
+                        raise ModelUnavailable(
+                            f"Model or endpoint not found (HTTP 404): {_detail(resp)}"
+                        )
                     if resp.status_code in RETRYABLE_STATUS:
-                        last = ModelUnavailable(f"Token Factory returned HTTP {resp.status_code}: {_detail(resp)}")
+                        last = ModelUnavailable(
+                            f"Token Factory returned HTTP {resp.status_code}: {_detail(resp)}"
+                        )
                     elif resp.status_code >= 400:
-                        raise ModelUnavailable(f"Token Factory returned HTTP {resp.status_code}: {_detail(resp)}")
+                        raise ModelUnavailable(
+                            f"Token Factory returned HTTP {resp.status_code}: {_detail(resp)}"
+                        )
                     else:
                         try:
                             return resp.json(), attempts
                         except ValueError as exc:
-                            raise ModelBadOutput("Token Factory returned a non-JSON response") from exc
+                            raise ModelBadOutput(
+                                "Token Factory returned a non-JSON response"
+                            ) from exc
                 if attempts <= self.config.max_retries:
                     time.sleep(min(8.0, 0.5 * 2 ** (attempts - 1)))
         assert last is not None
@@ -167,7 +179,9 @@ class TokenFactoryClient:
             if candidate in available and candidate.lower().startswith("nvidia/"):
                 self._resolved_model = candidate
                 return candidate
-        nvidia = sorted(m for m in available if m.lower().startswith("nvidia/") and "nemotron" in m.lower())
+        nvidia = sorted(
+            m for m in available if m.lower().startswith("nvidia/") and "nemotron" in m.lower()
+        )
         if nvidia:
             self._resolved_model = nvidia[0]
             return nvidia[0]

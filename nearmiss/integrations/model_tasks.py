@@ -100,11 +100,16 @@ def validate_interpretation(raw: RawInterpretation, narrative: str) -> IncidentI
         if spec is None:
             status, note = "rejected", f"'{p.name}' is not a parameter NearMiss can use."
         elif p.value is not None and not spec[1] <= p.value <= spec[2]:
-            status, note = "rejected", f"{p.value} {spec[0]} is outside the plausible range {spec[1]}–{spec[2]} {spec[0]}."
+            status, note = (
+                "rejected",
+                f"{p.value} {spec[0]} is outside the plausible range {spec[1]}–{spec[2]} {spec[0]}.",
+            )
         elif prov != "assumed" and (not p.evidence or _norm(p.evidence) not in narr):
             status, note = "rejected", "The quoted evidence does not appear in the incident report."
-        elif prov == "observed" and p.value is not None and not any(
-            abs(n - p.value) < 1e-9 for n in _numbers(p.evidence)
+        elif (
+            prov == "observed"
+            and p.value is not None
+            and not any(abs(n - p.value) < 1e-9 for n in _numbers(p.evidence))
         ):
             status, prov = "downgraded", "estimated"
             note = "Marked observed, but the value is not stated in the quoted text; treated as an estimate."
@@ -147,7 +152,9 @@ def _parse_json(content: str) -> dict[str, Any]:
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
-        raise ModelBadOutput(f"Model output is not valid JSON ({exc.msg} at char {exc.pos}).") from exc
+        raise ModelBadOutput(
+            f"Model output is not valid JSON ({exc.msg} at char {exc.pos})."
+        ) from exc
     if not isinstance(data, dict):
         raise ModelBadOutput("Model output is JSON but not an object.")
     return data
@@ -185,7 +192,9 @@ def _meta(res: ChatResult) -> dict[str, Any]:
     }
 
 
-def interpret_incident(client: TokenFactoryClient, narrative: str) -> tuple[TaskOutcome, IncidentInterpretation | None]:
+def interpret_incident(
+    client: TokenFactoryClient, narrative: str
+) -> tuple[TaskOutcome, IncidentInterpretation | None]:
     names = ", ".join(f"{k} ({v[0]})" for k, v in EXTRACTABLE.items())
     system = INTERPRET_SYSTEM.format(names=names)
     user = f"Incident report:\n<<<\n{narrative.strip()}\n>>>"
@@ -193,16 +202,33 @@ def interpret_incident(client: TokenFactoryClient, narrative: str) -> tuple[Task
     res = client.chat_json(system, user, max_tokens=1500)
     meta = _meta(res)
     if res.finish_reason == "length":
-        return TaskOutcome(task="interpret_incident", request_hash=rh, status="invalid_output",
-                           error_kind="truncated", error="Model output was cut off at the token limit.", **meta), None
+        return TaskOutcome(
+            task="interpret_incident",
+            request_hash=rh,
+            status="invalid_output",
+            error_kind="truncated",
+            error="Model output was cut off at the token limit.",
+            **meta,
+        ), None
     try:
         raw = RawInterpretation.model_validate(_parse_json(res.content))
     except (ModelBadOutput, ValidationError) as exc:
-        return TaskOutcome(task="interpret_incident", request_hash=rh, status="invalid_output",
-                           error_kind="invalid_output", error=str(exc)[:1000], **meta), None
+        return TaskOutcome(
+            task="interpret_incident",
+            request_hash=rh,
+            status="invalid_output",
+            error_kind="invalid_output",
+            error=str(exc)[:1000],
+            **meta,
+        ), None
     interp = validate_interpretation(raw, narrative)
-    return TaskOutcome(task="interpret_incident", request_hash=rh, status="ok",
-                       result=interp.model_dump(mode="json"), **meta), interp
+    return TaskOutcome(
+        task="interpret_incident",
+        request_hash=rh,
+        status="ok",
+        result=interp.model_dump(mode="json"),
+        **meta,
+    ), interp
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +265,10 @@ def scenario_brief(sc: Scenario) -> dict[str, Any]:
             "cruise_speed_mps": sc.forklift.cruise_speed.value,
             "footprint_m": [sc.forklift.length_m, sc.forklift.width_m],
         },
-        "pedestrian": {"route": sc.pedestrian.route, "walking_speed_mps": sc.pedestrian.walking_speed.value},
+        "pedestrian": {
+            "route": sc.pedestrian.route,
+            "walking_speed_mps": sc.pedestrian.walking_speed.value,
+        },
         "obstructions": [
             {
                 "id": o.id,
@@ -266,22 +295,47 @@ def validate_candidates(sc: Scenario, data: dict[str, Any]) -> list[CandidateChe
     for i, item in enumerate(items[:8]):
         reasons: list[str] = []
         if not isinstance(item, dict):
-            checks.append(CandidateCheck(index=i, status="rejected", reasons=["not an object"], intervention=None, raw={"value": str(item)[:200]}))
+            checks.append(
+                CandidateCheck(
+                    index=i,
+                    status="rejected",
+                    reasons=["not an object"],
+                    intervention=None,
+                    raw={"value": str(item)[:200]},
+                )
+            )
             continue
-        payload = {k: v for k, v in item.items() if k in {"type", "obstruction_id", "offset_m", "crossing_x_m", "label", "rationale"}}
+        payload = {
+            k: v
+            for k, v in item.items()
+            if k in {"type", "obstruction_id", "offset_m", "crossing_x_m", "label", "rationale"}
+        }
         payload["id"] = f"model-{i + 1}"
         payload["origin"] = "model"
         payload.setdefault("label", f"Model candidate {i + 1}")
         if payload.get("type") not in PHYSICAL_INTERVENTION_TYPES:
-            checks.append(CandidateCheck(index=i, status="rejected",
-                                         reasons=[f"type '{item.get('type')}' is not a supported physical intervention"],
-                                         intervention=None, raw=item))
+            checks.append(
+                CandidateCheck(
+                    index=i,
+                    status="rejected",
+                    reasons=[f"type '{item.get('type')}' is not a supported physical intervention"],
+                    intervention=None,
+                    raw=item,
+                )
+            )
             continue
         try:
             iv = INTERVENTION.validate_python(payload)
         except ValidationError as exc:
-            checks.append(CandidateCheck(index=i, status="rejected",
-                                         reasons=[e["msg"] for e in exc.errors()][:3], intervention=None, raw=item))
+            checks.append(
+                CandidateCheck(
+                    index=i,
+                    status="rejected",
+                    reasons=[e["msg"] for e in exc.errors()][:3],
+                    intervention=None,
+                    raw=item,
+                )
+            )
             continue
         target = getattr(iv, "obstruction_id", None)
         if target is not None:
@@ -304,8 +358,15 @@ def validate_candidates(sc: Scenario, data: dict[str, Any]) -> list[CandidateChe
                 reasons += [f.message for f in geometry_findings(resolved, "candidate")]
             except TransformError as exc:
                 reasons.append(str(exc))
-        checks.append(CandidateCheck(index=i, status="rejected" if reasons else "valid", reasons=reasons,
-                                     intervention=iv.model_dump(mode="json"), raw=item))
+        checks.append(
+            CandidateCheck(
+                index=i,
+                status="rejected" if reasons else "valid",
+                reasons=reasons,
+                intervention=iv.model_dump(mode="json"),
+                raw=item,
+            )
+        )
     return checks
 
 
@@ -320,16 +381,35 @@ def propose_interventions(
         + "\nIncident summary: "
         + (sc.incident.summary if sc.incident else "n/a")
     )
-    rh = sha256_hex(canonical_json({"task": "propose_interventions", "system": PROPOSE_SYSTEM, "user": user}))
+    rh = sha256_hex(
+        canonical_json({"task": "propose_interventions", "system": PROPOSE_SYSTEM, "user": user})
+    )
     res = client.chat_json(PROPOSE_SYSTEM, user, max_tokens=1500, temperature=0.4)
     meta = _meta(res)
     if res.finish_reason == "length":
-        return TaskOutcome(task="propose_interventions", request_hash=rh, status="invalid_output",
-                           error_kind="truncated", error="Model output was cut off at the token limit.", **meta), None
+        return TaskOutcome(
+            task="propose_interventions",
+            request_hash=rh,
+            status="invalid_output",
+            error_kind="truncated",
+            error="Model output was cut off at the token limit.",
+            **meta,
+        ), None
     try:
         checks = validate_candidates(sc, _parse_json(res.content))
     except ModelBadOutput as exc:
-        return TaskOutcome(task="propose_interventions", request_hash=rh, status="invalid_output",
-                           error_kind="invalid_output", error=str(exc), **meta), None
-    return TaskOutcome(task="propose_interventions", request_hash=rh, status="ok",
-                       result={"candidates": [c.model_dump(mode="json") for c in checks]}, **meta), checks
+        return TaskOutcome(
+            task="propose_interventions",
+            request_hash=rh,
+            status="invalid_output",
+            error_kind="invalid_output",
+            error=str(exc),
+            **meta,
+        ), None
+    return TaskOutcome(
+        task="propose_interventions",
+        request_hash=rh,
+        status="ok",
+        result={"candidates": [c.model_dump(mode="json") for c in checks]},
+        **meta,
+    ), checks

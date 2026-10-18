@@ -16,10 +16,7 @@ _PRIMES = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37)
 
 
 def _scale(envelope: StressEnvelope, unit: list[float]) -> StressPoint:
-    return {
-        a.name: a.low + u * (a.high - a.low)
-        for a, u in zip(envelope.axes, unit, strict=True)
-    }
+    return {a.name: a.low + u * (a.high - a.low) for a, u in zip(envelope.axes, unit, strict=True)}
 
 
 def latin_hypercube(envelope: StressEnvelope, n: int, seed: int) -> list[StressPoint]:
@@ -49,6 +46,8 @@ def halton(envelope: StressEnvelope, n: int, skip: int = 20) -> list[StressPoint
     if len(envelope.axes) > len(_PRIMES):
         raise ValueError("too many stress axes for the Halton sequence")
     return [
-        _scale(envelope, [_radical_inverse(i + skip, _PRIMES[d]) for d in range(len(envelope.axes))])
+        _scale(
+            envelope, [_radical_inverse(i + skip, _PRIMES[d]) for d in range(len(envelope.axes))]
+        )
         for i in range(n)
     ]
