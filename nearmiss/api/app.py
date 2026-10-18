@@ -441,6 +441,8 @@ def create_app(
         stressed = apply_stress(sc, rec["stress_point"])
         payload = _trajectory_payload(sc, stressed)
         payload["verification"] = {
+            "recorded_engine_version": exp["plan"]["engine_version"],
+            "current_engine_version": ENGINE_VERSION,
             "recorded_config_hash": rec["config_hash"],
             "recorded_trajectory_hash": rec["trajectory_hash"],
             "config_hash_match": payload["config_hash"] == rec["config_hash"],

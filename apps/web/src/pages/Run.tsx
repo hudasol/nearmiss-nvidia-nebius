@@ -101,7 +101,15 @@ export function RunPage() {
                   <dd>{v?.config_hash_match ? <span className="tag ok">Matches</span> : <span className="tag error">Differs</span>} <span className="hash">{v?.recorded_config_hash.slice(0, 16)}</span></dd>
                   <dt>Trajectory</dt>
                   <dd>{v?.trajectory_hash_match ? <span className="tag ok">Matches</span> : <span className="tag error">Differs</span>} <span className="hash">{v?.recorded_trajectory_hash.slice(0, 16)}</span></dd>
+                  <dt>Engine</dt>
+                  <dd>{v?.recorded_engine_version}{v && v.recorded_engine_version !== v.current_engine_version && <> recorded, {v.current_engine_version} now</>}</dd>
                 </dl>
+                {v && v.recorded_engine_version !== v.current_engine_version && (
+                  <p className="notice warn" style={{ marginTop: 10, fontSize: "0.88rem" }}>
+                    This run was recorded with an earlier engine version, so the replay may differ. Re-run the experiment to
+                    reproduce it on the current engine.
+                  </p>
+                )}
               </div>
             </section>
           </div>

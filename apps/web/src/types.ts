@@ -144,6 +144,8 @@ export interface SimulationPayload {
   conflict_zone: { polygon: Point[] } | null;
   engine_version: string;
   verification?: {
+    recorded_engine_version: string;
+    current_engine_version: string;
     recorded_config_hash: string;
     recorded_trajectory_hash: string;
     config_hash_match: boolean;

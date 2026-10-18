@@ -13,6 +13,8 @@ interface Arm {
   source: "you" | "nemotron";
 }
 
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
 let counter = 0;
 const nextId = (p: string) => `${p}-${Date.now().toString(36).slice(-4)}${(counter++).toString(36)}`;
 
@@ -55,9 +57,9 @@ export function ExperimentBuilder({
     const o = scenario.obstructions.find((x) => x.id === obsId);
     if (kind === "relocate_obstruction" && o) {
       const parts = [dx ? `${Math.abs(dx)} m ${dx < 0 ? "west" : "east"}` : "", dy ? `${Math.abs(dy)} m ${dy < 0 ? "south" : "north"}` : ""].filter(Boolean);
-      return { type: kind, id: nextId("move"), label: `Move ${o.label.toLowerCase()} ${parts.join(", ") || "(no offset)"}`, obstruction_id: o.id, offset_m: [dx, dy] };
+      return { type: kind, id: nextId("move"), label: `Move ${lowerFirst(o.label)} ${parts.join(", ") || "(no offset)"}`, obstruction_id: o.id, offset_m: [dx, dy] };
     }
-    if (kind === "remove_obstruction" && o) return { type: kind, id: nextId("remove"), label: `Remove ${o.label.toLowerCase()}`, obstruction_id: o.id };
+    if (kind === "remove_obstruction" && o) return { type: kind, id: nextId("remove"), label: `Remove ${lowerFirst(o.label)}`, obstruction_id: o.id };
     if (kind === "reroute_crossing") return { type: kind, id: nextId("cross"), label: `Move the crossing to x = ${crossX} m`, crossing_x_m: crossX };
     if (kind === "signage") return { type: "signage", id: nextId("sign"), label: "Add a 'look left' sign at the crossing" };
     return null;
