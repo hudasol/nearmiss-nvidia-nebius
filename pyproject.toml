@@ -32,6 +32,8 @@ markers = [
     "slow: dense sweeps that take more than a few seconds",
 ]
 addopts = "-m 'not live'"
+log_level = "WARNING"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]
 
 [tool.ruff]
 line-length = 100
